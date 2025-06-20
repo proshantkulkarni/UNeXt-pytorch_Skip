@@ -20,7 +20,7 @@ import losses
 from dataset import Dataset
 from metrics import iou_score
 from utils import AverageMeter, str2bool
-from archs import UNext
+from archs_semantic_map import UNext
 
 
 ARCH_NAMES = archs.__all__
@@ -34,7 +34,7 @@ def parse_args():
 
     parser.add_argument('--name', default=None,
                         help='model name: (default: arch+timestamp)')
-    parser.add_argument('--epochs', default=100, type=int, metavar='N',
+    parser.add_argument('--epochs', default=1000, type=int, metavar='N',
                         help='number of total epochs to run')
     parser.add_argument('-b', '--batch_size', default=16, type=int,
                         metavar='N', help='mini-batch size (default: 16)')
@@ -61,9 +61,9 @@ def parse_args():
     # dataset
     parser.add_argument('--dataset', default='isic',
                         help='dataset name')
-    parser.add_argument('--img_ext', default='.png',
+    parser.add_argument('--img_ext', default='.bmp',
                         help='image file extension')
-    parser.add_argument('--mask_ext', default='.png',
+    parser.add_argument('--mask_ext', default='.bmp',
                         help='mask file extension')
 
     # optimizer
@@ -72,7 +72,7 @@ def parse_args():
                         help='loss: ' +
                         ' | '.join(['Adam', 'SGD']) +
                         ' (default: Adam)')
-    parser.add_argument('--lr', '--learning_rate', default=1e-3, type=float,
+    parser.add_argument('--lr', '--learning_rate', default=1e-4, type=float,
                         metavar='LR', help='initial learning rate')
     parser.add_argument('--momentum', default=0.9, type=float,
                         help='momentum')
@@ -87,7 +87,7 @@ def parse_args():
     parser.add_argument('--min_lr', default=1e-5, type=float,
                         help='minimum learning rate')
     parser.add_argument('--factor', default=0.1, type=float)
-    parser.add_argument('--patience', default=2, type=int)
+    parser.add_argument('--patience', default=20, type=int)
     parser.add_argument('--milestones', default='1,2', type=str)
     parser.add_argument('--gamma', default=2/3, type=float)
     parser.add_argument('--early_stopping', default=-1, type=int,
@@ -191,6 +191,9 @@ def validate(config, val_loader, model, criterion):
 
 
 def main():
+
+    save_dir = '/content/drive/MyDrive/Amit-Paper3/ISIC_3'
+
     config = vars(parse_args())
 
     if config['name'] is None:
@@ -199,14 +202,14 @@ def main():
         else:
             config['name'] = '%s_%s_woDS' % (config['dataset'], config['arch'])
     
-    os.makedirs('models/%s' % config['name'], exist_ok=True)
+    os.makedirs('/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s' % config['name'], exist_ok=True)
 
     print('-' * 20)
     for key in config:
         print('%s: %s' % (key, config[key]))
     print('-' * 20)
 
-    with open('models/%s/config.yml' % config['name'], 'w') as f:
+    with open('/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s/config.yml' % config['name'], 'w') as f:
         yaml.dump(config, f)
 
     # define loss function (criterion)
@@ -248,10 +251,14 @@ def main():
         raise NotImplementedError
 
     # Data loading code
-    img_ids = glob(os.path.join('inputs', config['dataset'], 'images', '*' + config['img_ext']))
-    img_ids = [os.path.splitext(os.path.basename(p))[0] for p in img_ids]
+    # img_ids = glob(os.path.join('/content/drive/MyDrive/MDB-2024/Datasets/MDB_New_Imgs', 'fluorescent_transformed', '*' + config['img_ext']))
+    # img_ids = [os.path.splitext(os.path.basename(p))[0] for p in img_ids]
+    train_img_ids = glob(os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/train/images', '*' +config['img_ext']))
+    val_img_ids = glob(os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/val/images','*'+ config['img_ext']))
+    train_img_ids = [os.path.splitext(os.path.basename(p))[0] for p in train_img_ids]
+    val_img_ids = [os.path.splitext(os.path.basename(p))[0] for p in val_img_ids]
 
-    train_img_ids, val_img_ids = train_test_split(img_ids, test_size=0.2, random_state=41)
+    # train_img_ids, val_img_ids = train_test_split(img_ids, test_size=0.1, random_state=41)
 
     train_transform = Compose([
         RandomRotate90(),
@@ -267,16 +274,16 @@ def main():
 
     train_dataset = Dataset(
         img_ids=train_img_ids,
-        img_dir=os.path.join('inputs', config['dataset'], 'images'),
-        mask_dir=os.path.join('inputs', config['dataset'], 'masks'),
+        img_dir=os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/train/', 'images'),
+        mask_dir=os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/train/', 'masks'),
         img_ext=config['img_ext'],
         mask_ext=config['mask_ext'],
         num_classes=config['num_classes'],
         transform=train_transform)
     val_dataset = Dataset(
         img_ids=val_img_ids,
-        img_dir=os.path.join('inputs', config['dataset'], 'images'),
-        mask_dir=os.path.join('inputs', config['dataset'], 'masks'),
+        img_dir=os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/val/', 'images'),
+        mask_dir=os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/val/', 'masks'),
         img_ext=config['img_ext'],
         mask_ext=config['mask_ext'],
         num_classes=config['num_classes'],
@@ -331,13 +338,13 @@ def main():
         log['val_iou'].append(val_log['iou'])
         log['val_dice'].append(val_log['dice'])
 
-        pd.DataFrame(log).to_csv('models/%s/log.csv' %
+        pd.DataFrame(log).to_csv('/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s/log.csv' %
                                  config['name'], index=False)
 
         trigger += 1
 
         if val_log['iou'] > best_iou:
-            torch.save(model.state_dict(), 'models/%s/model.pth' %
+            torch.save(model.state_dict(), '/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s/model.pth' %
                        config['name'])
             best_iou = val_log['iou']
             print("=> saved best model")

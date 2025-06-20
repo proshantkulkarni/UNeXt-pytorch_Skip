@@ -21,7 +21,7 @@ _C.DATA = CN()
 # Batch size for a single GPU, could be overwritten by command line argument
 _C.DATA.BATCH_SIZE = 1
 # Path to dataset, could be overwritten by command line argument
-_C.DATA.DATA_PATH = ''
+_C.DATA.DATA_PATH = '/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic'
 # Dataset name
 _C.DATA.DATASET = 'imagenet'
 # Input image size

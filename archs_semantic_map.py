@@ -436,6 +436,7 @@ class UNext(nn.Module):
         out = F.relu(F.max_pool2d(self.ebn3(self.encoder3(out)),2,2))
         t3 = out
         print(t3.shape)
+        print("hellooooo")
         exit(0)
         ### Tokenized MLP Stage
         ### Stage 4
