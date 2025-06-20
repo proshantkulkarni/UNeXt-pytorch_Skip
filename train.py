@@ -192,8 +192,9 @@ def validate(config, val_loader, model, criterion):
 
 def main():
 
-    save_dir = '/content/drive/MyDrive/Amit-Paper3/ISIC_3'
-
+    # save_dir = '/content/drive/MyDrive/Amit-Paper3/ISIC_3'
+    save_dir = os.path.join("models", config["name"])
+    os.makedirs(save_dir, exist_ok=True)
     config = vars(parse_args())
 
     if config['name'] is None:
@@ -338,14 +339,17 @@ def main():
         log['val_iou'].append(val_log['iou'])
         log['val_dice'].append(val_log['dice'])
 
-        pd.DataFrame(log).to_csv('/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s/log.csv' %
-                                 config['name'], index=False)
+        # pd.DataFrame(log).to_csv('/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s/log.csv' %
+        #                          config['name'], index=False)
 
+        pd.DataFrame(log).to_csv(os.path.join(save_dir, "log.csv"), index=False)
+        
         trigger += 1
 
         if val_log['iou'] > best_iou:
-            torch.save(model.state_dict(), '/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s/model.pth' %
-                       config['name'])
+            # torch.save(model.state_dict(), '/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s/model.pth' %
+            #            config['name'])
+            torch.save(model.state_dict(), os.path.join(save_dir, "model.pth"))
             best_iou = val_log['iou']
             print("=> saved best model")
             trigger = 0

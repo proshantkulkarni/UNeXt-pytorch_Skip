@@ -32,8 +32,16 @@ def parse_args():
 def main():
     args = parse_args()
 
-    with open('models/%s/config.yml' % args.name, 'r') as f:
+    # with open('models/%s/config.yml' % args.name, 'r') as f:
+    #     config = yaml.load(f, Loader=yaml.FullLoader)
+
+    config_path = os.path.join("models", args.name, "config.yml")
+    with open(config_path) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
+
+    img_dir = os.path.join(config['dataset'], 'images')
+    mask_dir = os.path.join(config['dataset'], 'masks')
+    img_ids = glob(os.path.join(img_dir, '*' + config['img_ext']))
 
     print('-'*20)
     for key in config.keys():
