@@ -311,24 +311,27 @@ def main():
     # train_img_ids, val_img_ids = train_test_split(img_ids, test_size=0.1, random_state=41)
 
     
-    # Get raw file paths
     train_img_paths = glob(os.path.join(config['dataset'], 'train', 'images', '*' + config['img_ext']))
-    val_img_paths   = glob(os.path.join(config['dataset'], 'val',   'images', '*' + config['img_ext']))
+    val_img_paths = glob(os.path.join(config['dataset'], 'val', 'images', '*' + config['img_ext']))
 
-    # Extract valid IDs only if both image and mask exist
     train_img_ids = []
-    for img_path in train_img_paths:
-        img_id = os.path.splitext(os.path.basename(img_path))[0]
+    for path in train_img_paths:
+        img_id = os.path.splitext(os.path.basename(path))[0]
         mask_path = os.path.join(config['dataset'], 'train', 'masks', img_id + config['mask_ext'])
-        if os.path.exists(mask_path):
+        if os.path.exists(path) and os.path.exists(mask_path):
             train_img_ids.append(img_id)
+        if not os.path.exists(path):
+            print(f"[WARN] Missing image: {path}")
 
     val_img_ids = []
-    for img_path in val_img_paths:
-        img_id = os.path.splitext(os.path.basename(img_path))[0]
+    for path in val_img_paths:
+        img_id = os.path.splitext(os.path.basename(path))[0]
         mask_path = os.path.join(config['dataset'], 'val', 'masks', img_id + config['mask_ext'])
-        if os.path.exists(mask_path):
+        if os.path.exists(path) and os.path.exists(mask_path):
             val_img_ids.append(img_id)
+        if not os.path.exists(path):
+            print(f"[WARN] Missing image: {path}")
+
 
     train_transform = Compose([
         RandomRotate90(),
