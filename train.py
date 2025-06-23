@@ -193,10 +193,18 @@ def validate(config, val_loader, model, criterion):
 def main():
 
     # save_dir = '/content/drive/MyDrive/Amit-Paper3/ISIC_3'
-    config = vars(parse_args())  # ✅ First assign config
+    config = vars(parse_args())
     # save_dir = os.path.join("models", config["name"])
     save_dir = os.path.join(os.getcwd(), "models", config["name"])
     os.makedirs(save_dir, exist_ok=True)
+    
+    print(f"\n Loading data from: {config['dataset']}")
+    print(f" Train images: {os.path.join(config['dataset'], 'train', 'images')}")
+    print(f" Train masks:  {os.path.join(config['dataset'], 'train', 'masks')}")
+    print(f" Val images:   {os.path.join(config['dataset'], 'val', 'images')}")
+    print(f" Val masks:    {os.path.join(config['dataset'], 'val', 'masks')}")
+    print(f" Saving results to: {save_dir}\n")
+
     config = vars(parse_args())
 
     if config['name'] is None:
@@ -214,6 +222,8 @@ def main():
 
     with open(os.path.join(save_dir, 'config.yml'), 'w') as f:
         yaml.dump(config, f)
+
+    print(" Saved config to:", os.path.join(save_dir, 'config.yml'))
 
     # define loss function (criterion)
     if config['loss'] == 'BCEWithLogitsLoss':
@@ -352,12 +362,18 @@ def main():
         
         trigger += 1
 
+        print(f"📈 Epoch [{epoch+1}/{config['epochs']}]:")
+        print(f"   Train Loss: {train_log['loss']:.4f}, IOU: {train_log['iou']:.4f}")
+        print(f"   Val   Loss: {val_log['loss']:.4f}, IOU: {val_log['iou']:.4f}, Dice: {val_log['dice']:.4f}")
+
         if val_log['iou'] > best_iou:
             # torch.save(model.state_dict(), '/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s/model.pth' %
             #            config['name'])
+            model_path = os.path.join(save_dir, "model.pth")
             torch.save(model.state_dict(), os.path.join(save_dir, "model.pth"))
             best_iou = val_log['iou']
             print("=> saved best model")
+            print(f" New best model saved at: {model_path}")
             trigger = 0
 
         # early stopping
