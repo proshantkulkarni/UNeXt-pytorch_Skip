@@ -286,23 +286,23 @@ def main():
     #         valid_val_ids.append(img_id)
     # val_img_ids = valid_val_ids
 
-    train_img_paths = glob(os.path.join(config['dataset'], 'train', 'images', '*' + config['img_ext']))
-    val_img_paths = glob(os.path.join(config['dataset'], 'val', 'images', '*' + config['img_ext']))
+    # train_img_paths = glob(os.path.join(config['dataset'], 'train', 'images', '*' + config['img_ext']))
+    # val_img_paths = glob(os.path.join(config['dataset'], 'val', 'images', '*' + config['img_ext']))
 
-    train_img_ids = [os.path.splitext(os.path.basename(p))[0] for p in train_img_paths]
-    val_img_ids   = [os.path.splitext(os.path.basename(p))[0] for p in val_img_paths]
+    # train_img_ids = [os.path.splitext(os.path.basename(p))[0] for p in train_img_paths]
+    # val_img_ids   = [os.path.splitext(os.path.basename(p))[0] for p in val_img_paths]
 
-    train_img_ids = [
-        img_id for img_id in train_img_ids
-        if os.path.exists(os.path.join(config['dataset'], 'train', 'images', img_id + config['img_ext'])) and
-        os.path.exists(os.path.join(config['dataset'], 'train', 'masks', img_id + config['mask_ext']))
-    ]
+    # train_img_ids = [
+    #     img_id for img_id in train_img_ids
+    #     if os.path.exists(os.path.join(config['dataset'], 'train', 'images', img_id + config['img_ext'])) and
+    #     os.path.exists(os.path.join(config['dataset'], 'train', 'masks', img_id + config['mask_ext']))
+    # ]
 
-    val_img_ids = [
-        img_id for img_id in val_img_ids
-        if os.path.exists(os.path.join(config['dataset'], 'val', 'images', img_id + config['img_ext'])) and
-        os.path.exists(os.path.join(config['dataset'], 'val', 'masks', img_id + config['mask_ext']))
-    ]
+    # val_img_ids = [
+    #     img_id for img_id in val_img_ids
+    #     if os.path.exists(os.path.join(config['dataset'], 'val', 'images', img_id + config['img_ext'])) and
+    #     os.path.exists(os.path.join(config['dataset'], 'val', 'masks', img_id + config['mask_ext']))
+    # ]
 
 
     # train_img_ids = [os.path.splitext(os.path.basename(p))[0] for p in train_img_ids]
@@ -311,6 +311,24 @@ def main():
     # train_img_ids, val_img_ids = train_test_split(img_ids, test_size=0.1, random_state=41)
 
     
+    # Get raw file paths
+    train_img_paths = glob(os.path.join(config['dataset'], 'train', 'images', '*' + config['img_ext']))
+    val_img_paths   = glob(os.path.join(config['dataset'], 'val',   'images', '*' + config['img_ext']))
+
+    # Extract valid IDs only if both image and mask exist
+    train_img_ids = []
+    for img_path in train_img_paths:
+        img_id = os.path.splitext(os.path.basename(img_path))[0]
+        mask_path = os.path.join(config['dataset'], 'train', 'masks', img_id + config['mask_ext'])
+        if os.path.exists(mask_path):
+            train_img_ids.append(img_id)
+
+    val_img_ids = []
+    for img_path in val_img_paths:
+        img_id = os.path.splitext(os.path.basename(img_path))[0]
+        mask_path = os.path.join(config['dataset'], 'val', 'masks', img_id + config['mask_ext'])
+        if os.path.exists(mask_path):
+            val_img_ids.append(img_id)
 
     train_transform = Compose([
         RandomRotate90(),
