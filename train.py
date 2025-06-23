@@ -248,10 +248,13 @@ def main():
     cudnn.benchmark = True
 
     # create model
-    model = archs.__dict__[config['arch']](config['num_classes'],
+    # model = archs.__dict__[config['arch']](config['num_classes'],
+    #                                        config['input_channels'],
+    #                                        config['deep_supervision'])
+
+    model = archs_CTrans.__dict__[config['arch']](config['num_classes'],
                                            config['input_channels'],
                                            config['deep_supervision'])
-
     # model = model.cuda()
     model = model.to(device)
 
@@ -278,56 +281,7 @@ def main():
     else:
         raise NotImplementedError
 
-    # Data loading code
-    # img_ids = glob(os.path.join('/content/drive/MyDrive/MDB-2024/Datasets/MDB_New_Imgs', 'fluorescent_transformed', '*' + config['img_ext']))
-    # img_ids = [os.path.splitext(os.path.basename(p))[0] for p in img_ids]
-    # train_img_ids = glob(os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/train/images', '*' +config['img_ext']))
-    # val_img_ids = glob(os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/val/images','*'+ config['img_ext']))
-    
-    # train_img_ids = glob(os.path.join(config['dataset'], 'train', 'images', '*' + config['img_ext']))
-    # val_img_ids = glob(os.path.join(config['dataset'], 'val', 'images', '*' + config['img_ext']))
 
-    # valid_train_ids = []
-    # for img_id in train_img_ids:
-    #     img_path = os.path.join(config['dataset'], 'train', 'images', img_id + config['img_ext'])
-    #     mask_path = os.path.join(config['dataset'], 'train', 'masks', img_id + config['mask_ext'])
-    #     if os.path.exists(img_path) and os.path.exists(mask_path):
-    #         valid_train_ids.append(img_id)
-    # train_img_ids = valid_train_ids
-
-    # valid_val_ids = []
-    # for img_id in val_img_ids:
-    #     img_path = os.path.join(config['dataset'], 'val', 'images', img_id + config['img_ext'])
-    #     mask_path = os.path.join(config['dataset'], 'val', 'masks', img_id + config['mask_ext'])
-    #     if os.path.exists(img_path) and os.path.exists(mask_path):
-    #         valid_val_ids.append(img_id)
-    # val_img_ids = valid_val_ids
-
-    # train_img_paths = glob(os.path.join(config['dataset'], 'train', 'images', '*' + config['img_ext']))
-    # val_img_paths = glob(os.path.join(config['dataset'], 'val', 'images', '*' + config['img_ext']))
-
-    # train_img_ids = [os.path.splitext(os.path.basename(p))[0] for p in train_img_paths]
-    # val_img_ids   = [os.path.splitext(os.path.basename(p))[0] for p in val_img_paths]
-
-    # train_img_ids = [
-    #     img_id for img_id in train_img_ids
-    #     if os.path.exists(os.path.join(config['dataset'], 'train', 'images', img_id + config['img_ext'])) and
-    #     os.path.exists(os.path.join(config['dataset'], 'train', 'masks', img_id + config['mask_ext']))
-    # ]
-
-    # val_img_ids = [
-    #     img_id for img_id in val_img_ids
-    #     if os.path.exists(os.path.join(config['dataset'], 'val', 'images', img_id + config['img_ext'])) and
-    #     os.path.exists(os.path.join(config['dataset'], 'val', 'masks', img_id + config['mask_ext']))
-    # ]
-
-
-    # train_img_ids = [os.path.splitext(os.path.basename(p))[0] for p in train_img_ids]
-    # val_img_ids = [os.path.splitext(os.path.basename(p))[0] for p in val_img_ids]
-
-    # train_img_ids, val_img_ids = train_test_split(img_ids, test_size=0.1, random_state=41)
-
-    
     train_img_paths = glob(os.path.join(config['dataset'], 'train', 'images', '*' + config['img_ext']))
     val_img_paths = glob(os.path.join(config['dataset'], 'val', 'images', '*' + config['img_ext']))
 
