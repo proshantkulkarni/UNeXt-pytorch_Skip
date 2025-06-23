@@ -194,7 +194,8 @@ def main():
 
     # save_dir = '/content/drive/MyDrive/Amit-Paper3/ISIC_3'
     config = vars(parse_args())  # ✅ First assign config
-    save_dir = os.path.join("models", config["name"])
+    # save_dir = os.path.join("models", config["name"])
+    save_dir = os.path.join(os.getcwd(), "models", config["name"])
     os.makedirs(save_dir, exist_ok=True)
     config = vars(parse_args())
 
@@ -204,14 +205,14 @@ def main():
         else:
             config['name'] = '%s_%s_woDS' % (config['dataset'], config['arch'])
     
-    os.makedirs('/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s' % config['name'], exist_ok=True)
+    # os.makedirs('/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s' % config['name'], exist_ok=True)
 
     print('-' * 20)
     for key in config:
         print('%s: %s' % (key, config[key]))
     print('-' * 20)
 
-    with open('/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s/config.yml' % config['name'], 'w') as f:
+    with open(os.path.join(save_dir, 'config.yml'), 'w') as f:
         yaml.dump(config, f)
 
     # define loss function (criterion)
@@ -255,8 +256,12 @@ def main():
     # Data loading code
     # img_ids = glob(os.path.join('/content/drive/MyDrive/MDB-2024/Datasets/MDB_New_Imgs', 'fluorescent_transformed', '*' + config['img_ext']))
     # img_ids = [os.path.splitext(os.path.basename(p))[0] for p in img_ids]
-    train_img_ids = glob(os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/train/images', '*' +config['img_ext']))
-    val_img_ids = glob(os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/val/images','*'+ config['img_ext']))
+    # train_img_ids = glob(os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/train/images', '*' +config['img_ext']))
+    # val_img_ids = glob(os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/val/images','*'+ config['img_ext']))
+    
+    train_img_ids = glob(os.path.join(config['dataset'], 'train', 'images', '*' + config['img_ext']))
+    val_img_ids = glob(os.path.join(config['dataset'], 'val', 'images', '*' + config['img_ext']))
+
     train_img_ids = [os.path.splitext(os.path.basename(p))[0] for p in train_img_ids]
     val_img_ids = [os.path.splitext(os.path.basename(p))[0] for p in val_img_ids]
 
@@ -276,16 +281,16 @@ def main():
 
     train_dataset = Dataset(
         img_ids=train_img_ids,
-        img_dir=os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/train/', 'images'),
-        mask_dir=os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/train/', 'masks'),
+        img_dir=os.path.join(config['dataset'], 'train', 'images'),
+        mask_dir=os.path.join(config['dataset'], 'train', 'masks'),
         img_ext=config['img_ext'],
         mask_ext=config['mask_ext'],
         num_classes=config['num_classes'],
         transform=train_transform)
     val_dataset = Dataset(
         img_ids=val_img_ids,
-        img_dir=os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/val/', 'images'),
-        mask_dir=os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/val/', 'masks'),
+        img_dir=os.path.join(config['dataset'], 'train', 'images'),
+        mask_dir=os.path.join(config['dataset'], 'train', 'masks'),
         img_ext=config['img_ext'],
         mask_ext=config['mask_ext'],
         num_classes=config['num_classes'],
