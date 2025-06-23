@@ -205,8 +205,6 @@ def main():
     print(f" Val masks:    {os.path.join(config['dataset'], 'val', 'masks')}")
     print(f" Saving results to: {save_dir}\n")
 
-    config = vars(parse_args())
-
     if config['name'] is None:
         if config['deep_supervision']:
             config['name'] = '%s_%s_wDS' % (config['dataset'], config['arch'])
@@ -272,11 +270,6 @@ def main():
     train_img_ids = glob(os.path.join(config['dataset'], 'train', 'images', '*' + config['img_ext']))
     val_img_ids = glob(os.path.join(config['dataset'], 'val', 'images', '*' + config['img_ext']))
 
-    train_img_ids = [os.path.splitext(os.path.basename(p))[0] for p in train_img_ids]
-    val_img_ids = [os.path.splitext(os.path.basename(p))[0] for p in val_img_ids]
-
-    # train_img_ids, val_img_ids = train_test_split(img_ids, test_size=0.1, random_state=41)
-
     valid_train_ids = []
     for img_id in train_img_ids:
         img_path = os.path.join(config['dataset'], 'train', 'images', img_id + config['img_ext'])
@@ -292,7 +285,14 @@ def main():
         if os.path.exists(img_path) and os.path.exists(mask_path):
             valid_val_ids.append(img_id)
     val_img_ids = valid_val_ids
+
+    train_img_ids = [os.path.splitext(os.path.basename(p))[0] for p in train_img_ids]
+    val_img_ids = [os.path.splitext(os.path.basename(p))[0] for p in val_img_ids]
+
+    # train_img_ids, val_img_ids = train_test_split(img_ids, test_size=0.1, random_state=41)
+
     
+
     train_transform = Compose([
         RandomRotate90(),
         transforms.Flip(),
