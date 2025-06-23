@@ -7,6 +7,7 @@ import time
 
 import pandas as pd
 import torch
+import matplotlib.pyplot as plt
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torch.optim as optim
@@ -425,6 +426,58 @@ def main():
     total_end = time.time()
     total_duration = total_end - total_start
     print(f"\n✅ Training complete in {total_duration / 60:.2f} minutes ({total_duration:.2f} seconds)")
+
+    print("📉 Saving training plots...")
+
+    def plot_and_save(metrics_dict, title, ylabel, save_path):
+        plt.figure()
+        for label, values in metrics_dict.items():
+            plt.plot(values, label=label)
+        plt.xlabel('Epoch')
+        plt.ylabel(ylabel)
+        plt.title(title)
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(save_path)
+        plt.close()
+
+    # 1. Train vs Val Loss
+    plot_and_save(
+        metrics_dict={
+            "Train Loss": log['loss'],
+            "Val Loss": log['val_loss']
+        },
+        title="Loss over Epochs",
+        ylabel="Loss",
+        save_path=os.path.join(save_dir, 'loss_train_val.png')
+    )
+
+    # 2. Train IoU
+    plot_and_save(
+        metrics_dict={"Train IoU": log['iou']},
+        title="Train IoU over Epochs",
+        ylabel="IoU",
+        save_path=os.path.join(save_dir, 'iou_train.png')
+    )
+
+    # 3. Val IoU
+    plot_and_save(
+        metrics_dict={"Val IoU": log['val_iou']},
+        title="Validation IoU over Epochs",
+        ylabel="IoU",
+        save_path=os.path.join(save_dir, 'iou_val.png')
+    )
+
+    # 4. Val Dice
+    plot_and_save(
+        metrics_dict={"Val Dice": log['val_dice']},
+        title="Validation Dice over Epochs",
+        ylabel="Dice Score",
+        save_path=os.path.join(save_dir, 'dice_val.png')
+    )
+
+    print(f"📊 Plots saved to: {save_dir}")
+
 
 if __name__ == '__main__':
     main()
