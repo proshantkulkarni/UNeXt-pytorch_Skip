@@ -277,6 +277,22 @@ def main():
 
     # train_img_ids, val_img_ids = train_test_split(img_ids, test_size=0.1, random_state=41)
 
+    valid_train_ids = []
+    for img_id in train_img_ids:
+        img_path = os.path.join(config['dataset'], 'train', 'images', img_id + config['img_ext'])
+        mask_path = os.path.join(config['dataset'], 'train', 'masks', img_id + config['mask_ext'])
+        if os.path.exists(img_path) and os.path.exists(mask_path):
+            valid_train_ids.append(img_id)
+    train_img_ids = valid_train_ids
+
+    valid_val_ids = []
+    for img_id in val_img_ids:
+        img_path = os.path.join(config['dataset'], 'val', 'images', img_id + config['img_ext'])
+        mask_path = os.path.join(config['dataset'], 'val', 'masks', img_id + config['mask_ext'])
+        if os.path.exists(img_path) and os.path.exists(mask_path):
+            valid_val_ids.append(img_id)
+    val_img_ids = valid_val_ids
+    
     train_transform = Compose([
         RandomRotate90(),
         transforms.Flip(),
