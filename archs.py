@@ -450,7 +450,7 @@ class UNext_S(nn.Module):
 
         out = F.relu(F.interpolate(self.dbn1(self.decoder1(out)),scale_factor=(2,2),mode ='bilinear'))
         
-        out = torch.add(out,t4)
+        out = torch.add(out,t4)                     # FIRST SKIP
         _,_,H,W = out.shape
         out = out.flatten(2).transpose(1,2)
         for i, blk in enumerate(self.dblock1):
@@ -461,7 +461,7 @@ class UNext_S(nn.Module):
         out = self.dnorm3(out)
         out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
         out = F.relu(F.interpolate(self.dbn2(self.decoder2(out)),scale_factor=(2,2),mode ='bilinear'))
-        out = torch.add(out,t3)
+        out = torch.add(out,t3)                 # SECOND SKIP
         _,_,H,W = out.shape
         out = out.flatten(2).transpose(1,2)
         
@@ -472,9 +472,9 @@ class UNext_S(nn.Module):
         out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
 
         out = F.relu(F.interpolate(self.dbn3(self.decoder3(out)),scale_factor=(2,2),mode ='bilinear'))
-        out = torch.add(out,t2)
+        out = torch.add(out,t2)                     # THIRD SKIP
         out = F.relu(F.interpolate(self.dbn4(self.decoder4(out)),scale_factor=(2,2),mode ='bilinear'))
-        out = torch.add(out,t1)
+        out = torch.add(out,t1)                     # FOURTH SKIP
         out = F.relu(F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear'))
 
         return self.final(out)

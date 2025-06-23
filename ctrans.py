@@ -14,9 +14,117 @@ import torch.nn as nn
 import numpy as np
 from torch.nn import Dropout, Softmax, Conv2d, LayerNorm
 from torch.nn.modules.utils import _pair
-
+import torch.nn.functional as F
 
 logger = logging.getLogger(__name__)
+
+
+# -*- coding: utf-8 -*-
+# @Time    : 2021/6/19 2:44 下午
+# @Author  : Haonan Wang
+# @File    : Config.py
+# @Software: PyCharm
+import os
+import torch
+import time
+import ml_collections
+
+## PARAMETERS OF THE MODEL
+save_model = True
+tensorboard = True
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+use_cuda = torch.cuda.is_available()
+seed = 666
+os.environ['PYTHONHASHSEED'] = str(seed)
+
+cosineLR = True # whether use cosineLR or not
+n_channels = 3
+n_labels = 1
+epochs = 2000
+img_size = 224
+print_frequency = 1
+save_frequency = 5000
+vis_frequency = 10
+early_stopping_patience = 50
+
+pretrain = False
+task_name = 'MoNuSeg' # GlaS MoNuSeg
+# task_name = 'GlaS'
+learning_rate = 1e-3
+batch_size = 4
+
+
+# model_name = 'UCTransNet'
+model_name = 'UCTransNet_pretrain'
+
+train_dataset = './datasets/'+ task_name+ '/Train_Folder/'
+val_dataset = './datasets/'+ task_name+ '/Val_Folder/'
+test_dataset = './datasets/'+ task_name+ '/Test_Folder/'
+session_name       = 'Test_session' + '_' + time.strftime('%m.%d_%Hh%M')
+save_path          = task_name +'/'+ model_name +'/' + session_name + '/'
+model_path         = save_path + 'models/'
+tensorboard_folder = save_path + 'tensorboard_logs/'
+logger_path        = save_path + session_name + ".log"
+visualize_path     = save_path + 'visualize_val/'
+
+
+##########################################################################
+# CTrans configs
+##########################################################################
+def get_CTranS_config():
+    config = ml_collections.ConfigDict()
+    config.transformer = ml_collections.ConfigDict()
+    # config.KV_size = 960  # KV_size = Q1 + Q2 + Q3 + Q4
+    config.KV_size = 336 
+    config.transformer.num_heads  = 4
+    config.transformer.num_layers = 4
+    config.expand_ratio           = 4  # MLP channel dimension expand ratio
+    config.transformer.embeddings_dropout_rate = 0.1
+    config.transformer.attention_dropout_rate = 0.1
+    config.transformer.dropout_rate = 0
+    config.patch_sizes = [16,8,4,2]
+    # config.patch_sizes = [32,16,8,4]
+    config.base_channel = 64 # base channel of U-Net
+    config.n_classes = 1
+    return config
+
+
+
+
+# used in testing phase, copy the session name in training phase
+test_session = "Test_session_07.03_20h39"
+
+
+
+class Flatten(nn.Module):
+    def forward(self, x):
+        return x.view(x.size(0), -1)
+
+class CCA(nn.Module):
+    """
+    CCA Block
+    """
+    def __init__(self, F_g, F_x):
+        super().__init__()
+        self.mlp_x = nn.Sequential(
+            Flatten(),
+            nn.Linear(F_x, F_x))
+        self.mlp_g = nn.Sequential(
+            Flatten(),
+            nn.Linear(F_g, F_x))
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, g, x):
+        # channel-wise attention
+        avg_pool_x = F.avg_pool2d( x, (x.size(2), x.size(3)), stride=(x.size(2), x.size(3)))
+        channel_att_x = self.mlp_x(avg_pool_x)
+        avg_pool_g = F.avg_pool2d( g, (g.size(2), g.size(3)), stride=(g.size(2), g.size(3)))
+        channel_att_g = self.mlp_g(avg_pool_g)
+        channel_att_sum = (channel_att_x + channel_att_g)/2.0
+        scale = torch.sigmoid(channel_att_sum).unsqueeze(2).unsqueeze(3).expand_as(x)
+        x_after_channel = x * scale
+        out = self.relu(x_after_channel)
+        return out
 
 class Channel_Embeddings(nn.Module):
     """Construct the embeddings from patch, position embeddings.
@@ -31,16 +139,28 @@ class Channel_Embeddings(nn.Module):
                                        out_channels=in_channels,
                                        kernel_size=patch_size,
                                        stride=patch_size)
-        self.position_embeddings = nn.Parameter(torch.zeros(1, n_patches, in_channels))
+        # self.position_embeddings = nn.Parameter(torch.zeros(1, n_patches, in_channels))
+        self.position_embeddings = None  # initialize later based on input shape
         self.dropout = Dropout(config.transformer["embeddings_dropout_rate"])
 
     def forward(self, x):
         if x is None:
             return None
+        
+        print(f"[DEBUG] Input shape: {x.shape}")
+        print(f"[DEBUG] Patch embedding kernel: {self.patch_embeddings.kernel_size}, stride: {self.patch_embeddings.stride}")
+
         x = self.patch_embeddings(x)  # (B, hidden. n_patches^(1/2), n_patches^(1/2))
         x = x.flatten(2)
         x = x.transpose(-1, -2)  # (B, n_patches, hidden)
+
+
+        # embeddings = x + self.position_embeddings
+        if self.position_embeddings is None or self.position_embeddings.shape[1] != x.shape[1]:
+            self.position_embeddings = nn.Parameter(torch.zeros(1, x.shape[1], x.shape[2], device=x.device))
+
         embeddings = x + self.position_embeddings
+
         embeddings = self.dropout(embeddings)
         return embeddings
 
@@ -242,6 +362,8 @@ class Block_ViT(nn.Module):
         self.attn_norm3 = LayerNorm(channel_num[2],eps=1e-6)
         self.attn_norm4 = LayerNorm(channel_num[3],eps=1e-6)
         self.attn_norm =  LayerNorm(config.KV_size,eps=1e-6)
+        # self.attn_norm = LayerNorm(sum(channel_num), eps=1e-6)
+
         self.channel_attn = Attention_org(config, vis, channel_num)
 
         self.ffn_norm1 = LayerNorm(channel_num[0],eps=1e-6)

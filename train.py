@@ -2,6 +2,8 @@ import argparse
 import os
 from collections import OrderedDict
 from glob import glob
+import time
+
 
 import pandas as pd
 import torch
@@ -15,15 +17,17 @@ from sklearn.model_selection import train_test_split
 from torch.optim import lr_scheduler
 from tqdm import tqdm
 from albumentations import RandomRotate90,Resize
-import archs
 import losses
 from dataset import Dataset
 from metrics import iou_score
 from utils import AverageMeter, str2bool
-from archs_semantic_map import UNext
 
+# from archs_semantic_map import UNext
+import archs_CTrans
+# import archs
 
-ARCH_NAMES = archs.__all__
+# ARCH_NAMES = archs.__all__
+ARCH_NAMES = archs_CTrans.__all__
 LOSS_NAMES = losses.__all__
 LOSS_NAMES.append('BCEWithLogitsLoss')
 
@@ -109,9 +113,11 @@ def train(config, train_loader, model, criterion, optimizer):
 
     pbar = tqdm(total=len(train_loader))
     for input, target, _ in train_loader:
-        input = input.cuda()
-        target = target.cuda()
-
+        # input = input.cuda()
+        # target = target.cuda()
+        
+        input = input.to('cuda')
+        target = target.to('cuda')
         # compute output
         if config['deep_supervision']:
             outputs = model(input)
@@ -156,9 +162,11 @@ def validate(config, val_loader, model, criterion):
     with torch.no_grad():
         pbar = tqdm(total=len(val_loader))
         for input, target, _ in val_loader:
-            input = input.cuda()
-            target = target.cuda()
+            # input = input.cuda()
+            # target = target.cuda()
 
+            input = input.to('cuda')
+            target = target.to('cuda')
             # compute output
             if config['deep_supervision']:
                 outputs = model(input)
@@ -193,7 +201,11 @@ def validate(config, val_loader, model, criterion):
 def main():
 
     # save_dir = '/content/drive/MyDrive/Amit-Paper3/ISIC_3'
+    
     config = vars(parse_args())
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("🚀 Using device:", device)
+
     # save_dir = os.path.join("models", config["name"])
     save_dir = os.path.join(os.getcwd(), "models", config["name"])
     os.makedirs(save_dir, exist_ok=True)
@@ -225,9 +237,13 @@ def main():
 
     # define loss function (criterion)
     if config['loss'] == 'BCEWithLogitsLoss':
-        criterion = nn.BCEWithLogitsLoss().cuda()
+        # criterion = nn.BCEWithLogitsLoss().cuda()
+        criterion = nn.BCEWithLogitsLoss().to(device)
+
     else:
-        criterion = losses.__dict__[config['loss']]().cuda()
+        # criterion = losses.__dict__[config['loss']]().cuda()
+        criterion = losses.__dict__[config['loss']]().to(device)
+
 
     cudnn.benchmark = True
 
@@ -236,7 +252,8 @@ def main():
                                            config['input_channels'],
                                            config['deep_supervision'])
 
-    model = model.cuda()
+    # model = model.cuda()
+    model = model.to(device)
 
     params = filter(lambda p: p.requires_grad, model.parameters())
     if config['optimizer'] == 'Adam':
@@ -388,18 +405,24 @@ def main():
         ('val_loss', []),
         ('val_iou', []),
         ('val_dice', []),
+        ('epoch_time', [])
     ])
 
     best_iou = 0
     trigger = 0
+
+    total_start = time.time()
     for epoch in range(config['epochs']):
         print('Epoch [%d/%d]' % (epoch, config['epochs']))
-
-        # train for one epoch
+        epoch_start = time.time()
+    
         train_log = train(config, train_loader, model, criterion, optimizer)
-        # evaluate on validation set
+     
         val_log = validate(config, val_loader, model, criterion)
 
+        epoch_end = time.time()
+        epoch_duration = epoch_end - epoch_start
+        print(f"🕒 Epoch time: {epoch_duration:.2f} seconds")
         if config['scheduler'] == 'CosineAnnealingLR':
             scheduler.step()
         elif config['scheduler'] == 'ReduceLROnPlateau':
@@ -415,6 +438,7 @@ def main():
         log['val_loss'].append(val_log['loss'])
         log['val_iou'].append(val_log['iou'])
         log['val_dice'].append(val_log['dice'])
+        log['epoch_time'].append(epoch_duration)
 
         # pd.DataFrame(log).to_csv('/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s/log.csv' %
         #                          config['name'], index=False)
@@ -444,6 +468,9 @@ def main():
 
         torch.cuda.empty_cache()
 
+    total_end = time.time()
+    total_duration = total_end - total_start
+    print(f"\n✅ Training complete in {total_duration / 60:.2f} minutes ({total_duration:.2f} seconds)")
 
 if __name__ == '__main__':
     main()
