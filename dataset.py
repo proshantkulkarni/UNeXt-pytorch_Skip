@@ -94,9 +94,18 @@ class Dataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         img_id = self.img_ids[idx]
-        # img_path = os.path.join(self.img_dir, img_id + self.img_ext)
-        # img = cv2.imread(img_path)
-        img = cv2.imread(os.path.join(self.img_dir, img_id + self.img_ext))
+        img_path = os.path.join(self.img_dir, img_id + self.img_ext)
+        mask_path = os.path.join(self.mask_dir, img_id + self.mask_ext)
+
+
+        img = cv2.imread(img_path)
+        if img is None:
+            raise FileNotFoundError(f"[ERROR] Could not read image: {img_path}")
+
+        mask_img = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+        if mask_img is None:
+            raise FileNotFoundError(f"[ERROR] Could not read mask: {mask_path}")
+        
         # if img is None:
         #   raise FileNotFoundError(f"Image not found: {img_path}")
         mask = []

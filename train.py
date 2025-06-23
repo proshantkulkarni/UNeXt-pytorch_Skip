@@ -319,6 +319,10 @@ def main():
         num_workers=config['num_workers'],
         drop_last=False)
 
+    print(f" Loaded {len(train_dataset)} training samples")
+    print(f" Loaded {len(val_dataset)} validation samples")
+    print(f" Total: {len(train_dataset) + len(val_dataset)} samples\n")
+
     log = OrderedDict([
         ('epoch', []),
         ('lr', []),
