@@ -353,10 +353,11 @@ def main():
         mask_ext=config['mask_ext'],
         num_classes=config['num_classes'],
         transform=train_transform)
+    
     val_dataset = Dataset(
         img_ids=val_img_ids,
-        img_dir=os.path.join(config['dataset'], 'train', 'images'),
-        mask_dir=os.path.join(config['dataset'], 'train', 'masks'),
+        img_dir=os.path.join(config['dataset'], 'val', 'images'),
+        mask_dir=os.path.join(config['dataset'], 'val', 'masks'),
         img_ext=config['img_ext'],
         mask_ext=config['mask_ext'],
         num_classes=config['num_classes'],
