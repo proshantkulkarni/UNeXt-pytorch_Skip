@@ -193,6 +193,7 @@ def validate(config, val_loader, model, criterion):
 def main():
 
     # save_dir = '/content/drive/MyDrive/Amit-Paper3/ISIC_3'
+    config = vars(parse_args())  # ✅ First assign config
     save_dir = os.path.join("models", config["name"])
     os.makedirs(save_dir, exist_ok=True)
     config = vars(parse_args())
