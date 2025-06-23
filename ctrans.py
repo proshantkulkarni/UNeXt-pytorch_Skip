@@ -147,8 +147,8 @@ class Channel_Embeddings(nn.Module):
         if x is None:
             return None
         
-        print(f"[DEBUG] Input shape: {x.shape}")
-        print(f"[DEBUG] Patch embedding kernel: {self.patch_embeddings.kernel_size}, stride: {self.patch_embeddings.stride}")
+        # print(f"[DEBUG] Input shape: {x.shape}")
+        # print(f"[DEBUG] Patch embedding kernel: {self.patch_embeddings.kernel_size}, stride: {self.patch_embeddings.stride}")
 
         x = self.patch_embeddings(x)  # (B, hidden. n_patches^(1/2), n_patches^(1/2))
         x = x.flatten(2)
