@@ -205,6 +205,9 @@ def main():
     config = vars(parse_args())
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("🚀 Using device:", device)
+    n_gpu = torch.cuda.device_count()
+    print(f"🧠 Number of GPUs: {n_gpu}")
+
 
     # save_dir = os.path.join("models", config["name"])
     save_dir = os.path.join(os.getcwd(), "models", config["name"])
@@ -257,6 +260,13 @@ def main():
                                            config['deep_supervision'])
     # model = model.cuda()
     model = model.to(device)
+
+    # Add this for multi-GPU
+    if torch.cuda.device_count() > 1:
+        print(f"🔌 Using {torch.cuda.device_count()} GPUs with DataParallel")
+        model = nn.DataParallel(model)
+        print(f"📦 Model loaded on: {next(model.parameters()).device}")
+
 
     params = filter(lambda p: p.requires_grad, model.parameters())
     if config['optimizer'] == 'Adam':
@@ -405,15 +415,25 @@ def main():
         print(f"   Train Loss: {train_log['loss']:.4f}, IOU: {train_log['iou']:.4f}")
         print(f"   Val   Loss: {val_log['loss']:.4f}, IOU: {val_log['iou']:.4f}, Dice: {val_log['dice']:.4f}")
 
+        # if val_log['iou'] > best_iou:
+        #     # torch.save(model.state_dict(), '/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s/model.pth' %
+        #     #            config['name'])
+        #     model_path = os.path.join(save_dir, "model.pth")
+        #     torch.save(model.state_dict(), os.path.join(save_dir, "model.pth"))
+        #     best_iou = val_log['iou']
+        #     print("=> saved best model")
+        #     print(f" New best model saved at: {model_path}")
+        #     trigger = 0
+
         if val_log['iou'] > best_iou:
-            # torch.save(model.state_dict(), '/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s/model.pth' %
-            #            config['name'])
             model_path = os.path.join(save_dir, "model.pth")
-            torch.save(model.state_dict(), os.path.join(save_dir, "model.pth"))
+            state_dict = model.module.state_dict() if isinstance(model, nn.DataParallel) else model.state_dict()
+            torch.save(state_dict, model_path)
             best_iou = val_log['iou']
             print("=> saved best model")
             print(f" New best model saved at: {model_path}")
             trigger = 0
+
 
         # early stopping
         if config['early_stopping'] >= 0 and trigger >= config['early_stopping']:
