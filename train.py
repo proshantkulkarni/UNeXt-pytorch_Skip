@@ -340,13 +340,16 @@ def main():
         batch_size=config['batch_size'],
         shuffle=True,
         num_workers=config['num_workers'],
-        drop_last=True)
+        drop_last=True,
+        pin_memory=True, persistent_workers=True)
+    
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
         batch_size=config['batch_size'],
         shuffle=False,
         num_workers=config['num_workers'],
-        drop_last=False)
+        drop_last=False,
+        pin_memory=True, persistent_workers=True)
 
     print(f" Loaded {len(train_dataset)} training samples")
     print(f" Loaded {len(val_dataset)} validation samples")
