@@ -7,6 +7,8 @@ import time
 
 import pandas as pd
 import torch
+import random
+import numpy as np
 import matplotlib.pyplot as plt
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
@@ -201,10 +203,20 @@ def validate(config, val_loader, model, criterion):
                         ('dice', avg_meters['dice'].avg)])
 
 
+def set_seed(seed=42):
+    print(f" Fixing seed: {seed}")
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    cudnn.deterministic = True
+    cudnn.benchmark = False
+
 def main():
 
     # save_dir = '/content/drive/MyDrive/Amit-Paper3/ISIC_3'
-    
+    set_seed(config.get('seed', 42))  # Default seed is 42
+
     config = vars(parse_args())
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("🚀 Using device:", device)
