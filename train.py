@@ -215,7 +215,7 @@ def set_seed(seed=42):
 def main():
 
     # save_dir = '/content/drive/MyDrive/Amit-Paper3/ISIC_3'
-    set_seed(config.get('seed', 42))  # Default seed is 42
+    set_seed(42)  # Default seed is 42
 
     config = vars(parse_args())
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
