@@ -506,14 +506,14 @@ class UNext(nn.Module):
 #         return self.final(out)
 
 
-if __name__ == '__main__':
-    model = UNext(num_classes=1, input_channels=3)
-    model.eval()
+# if __name__ == '__main__':
+#     model = UNext(num_classes=1, input_channels=3)
+#     model.eval()
 
-    dummy_input = torch.randn(1, 3, 256, 256)
-    with torch.no_grad():
-        output = model(dummy_input)
+#     dummy_input = torch.randn(1, 3, 256, 256)
+#     with torch.no_grad():
+#         output = model(dummy_input)
 
-    print(f"✅ Forward pass successful! Output shape: {output.shape}")
+#     print(f"✅ Forward pass successful! Output shape: {output.shape}")
 
 #EOF

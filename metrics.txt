@@ -7,3 +7,17 @@ BUSI - F1 - 79.37 +- 0.57
 Vanilla - 
 CSA - 87.7 (447)
 SSA - reduce ()
+
+
+
+Patience - 50
+Epoch - 1000
+
+Result - Best of Epoch (after early stop)
+Add seed.
+
+
+
+Ablation :
+
+1. Baseline -> UNext 
