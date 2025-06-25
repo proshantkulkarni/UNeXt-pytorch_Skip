@@ -26,13 +26,13 @@ from metrics import iou_score
 from utils import AverageMeter, str2bool
 
 # from archs_semantic_map import UNext
-# import archs_CTrans
-import archs
+import archs_CTrans
+# import archs
 # import archs_DCA
 
-ARCH_NAMES = archs.__all__
+# ARCH_NAMES = archs.__all__
 # ARCH_NAMES = archs_DCA.__all__
-# ARCH_NAMES = archs_CTrans.__all__
+ARCH_NAMES = archs_CTrans.__all__
 LOSS_NAMES = losses.__all__
 LOSS_NAMES.append('BCEWithLogitsLoss')
 
@@ -267,12 +267,12 @@ def main():
                                         #    config['input_channels'],
                                         #    config['deep_supervision'])
 
-    model = archs.__dict__[config['arch']](config['num_classes'],
+    # model = archs.__dict__[config['arch']](config['num_classes'],
+                                        #    config['input_channels'],
+                                        #    config['deep_supervision'])
+    model = archs_CTrans.__dict__[config['arch']](config['num_classes'],
                                            config['input_channels'],
                                            config['deep_supervision'])
-    # model = archs_CTrans.__dict__[config['arch']](config['num_classes'],
-    #                                        config['input_channels'],
-    #                                        config['deep_supervision'])
     # model = model.cuda()
     model = model.to(device)
 
@@ -421,7 +421,7 @@ def main():
         pd.DataFrame(log).to_csv(os.path.join(save_dir, "log.csv"), index=False)
         
         trigger += 1
-
+        print(f"    Trigger: {trigger}")
         print(f"📈 Epoch [{epoch+1}/{config['epochs']}]:")
         print(f"   Train Loss: {train_log['loss']:.4f}, IOU: {train_log['iou']:.4f}")
         print(f"   Val   Loss: {val_log['loss']:.4f}, IOU: {val_log['iou']:.4f}, Dice: {val_log['dice']:.4f}")
