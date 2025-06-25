@@ -4,7 +4,7 @@ from collections import OrderedDict
 from glob import glob
 import time
 
-
+import sys
 import pandas as pd
 import torch
 import random
@@ -36,6 +36,29 @@ ARCH_NAMES = archs_CTrans.__all__
 LOSS_NAMES = losses.__all__
 LOSS_NAMES.append('BCEWithLogitsLoss')
 
+
+class Tee(object):
+    def __init__(self, name, mode="w"):
+        self.file = open(name, mode)
+        self.stdout = sys.stdout
+        self.stderr = sys.stderr
+        sys.stdout = self
+        sys.stderr = self
+
+    def write(self, data):
+        self.file.write(data)
+        self.stdout.write(data)
+        self.stdout.flush()
+        self.file.flush()
+
+    def flush(self):
+        self.file.flush()
+        self.stdout.flush()
+
+    def close(self):
+        sys.stdout = self.stdout
+        sys.stderr = self.stderr
+        self.file.close()
 
 
 def parse_args():
@@ -215,6 +238,9 @@ def set_seed(seed=42):
 def main():
 
     # save_dir = '/content/drive/MyDrive/Amit-Paper3/ISIC_3'
+    log_file_path = os.path.join(save_dir, "terminal_output.log")
+    tee = Tee(log_file_path)
+
     set_seed(42)  # Default seed is 42
 
     config = vars(parse_args())
@@ -497,7 +523,7 @@ def main():
     )
 
     print(f"📊 Plots saved to: {save_dir}")
-
+    tee.close()
 
 if __name__ == '__main__':
     main()
