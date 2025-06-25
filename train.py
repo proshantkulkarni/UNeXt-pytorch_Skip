@@ -237,19 +237,25 @@ def set_seed(seed=42):
 
 def main():
 
-    # save_dir = '/content/drive/MyDrive/Amit-Paper3/ISIC_3'
+    config = vars(parse_args())
+
+    if config['name'] is None:
+        if config['deep_supervision']:
+            config['name'] = '%s_%s_wDS' % (config['dataset'], config['arch'])
+        else:
+            config['name'] = '%s_%s_woDS' % (config['dataset'], config['arch'])
+
+    save_dir = os.path.join(os.getcwd(), "models", config["name"])
+    os.makedirs(save_dir, exist_ok=True)
+
     log_file_path = os.path.join(save_dir, "terminal_output.log")
     tee = Tee(log_file_path)
 
-    set_seed(42)  # Default seed is 42
-
-    config = vars(parse_args())
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("🚀 Using device:", device)
 
-    # save_dir = os.path.join("models", config["name"])
-    save_dir = os.path.join(os.getcwd(), "models", config["name"])
-    os.makedirs(save_dir, exist_ok=True)
+
+    set_seed(42)  # Default seed is 42
     
     print(f"\n Loading data from: {config['dataset']}")
     print(f" Train images: {os.path.join(config['dataset'], 'train', 'images')}")
