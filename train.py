@@ -41,9 +41,7 @@ class Tee(object):
     def __init__(self, name, mode="w"):
         self.file = open(name, mode)
         self.stdout = sys.stdout
-        self.stderr = sys.stderr
         sys.stdout = self
-        sys.stderr = self
 
     def write(self, data):
         self.file.write(data)
@@ -57,7 +55,6 @@ class Tee(object):
 
     def close(self):
         sys.stdout = self.stdout
-        sys.stderr = self.stderr
         self.file.close()
 
 
@@ -139,7 +136,8 @@ def train(config, train_loader, model, criterion, optimizer):
 
     model.train()
 
-    pbar = tqdm(total=len(train_loader))
+    # pbar = tqdm(total=len(train_loader))
+    pbar = tqdm(total=len(train_loader), file=sys.stderr, dynamic_ncols=True)
     for input, target, _ in train_loader:
         # input = input.cuda()
         # target = target.cuda()
@@ -188,7 +186,9 @@ def validate(config, val_loader, model, criterion):
     model.eval()
 
     with torch.no_grad():
-        pbar = tqdm(total=len(val_loader))
+        # pbar = tqdm(total=len(val_loader))
+        pbar = tqdm(total=len(val_loader), file=sys.stderr, dynamic_ncols=True)
+
         for input, target, _ in val_loader:
             # input = input.cuda()
             # target = target.cuda()
