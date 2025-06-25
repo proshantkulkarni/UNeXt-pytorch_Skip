@@ -36,18 +36,21 @@ ARCH_NAMES = archs_CTrans.__all__
 LOSS_NAMES = losses.__all__
 LOSS_NAMES.append('BCEWithLogitsLoss')
 
-
-class Tee(object):
+class Tee:
     def __init__(self, name, mode="w"):
         self.file = open(name, mode)
         self.stdout = sys.stdout
+        self.stderr = sys.stderr
         sys.stdout = self
+        # sys.stderr = self  # Optional: Uncomment only if you're okay breaking tqdm
 
     def write(self, data):
         self.file.write(data)
+        self.file.flush()
         self.stdout.write(data)
         self.stdout.flush()
-        self.file.flush()
+        # self.stderr.write(data)
+        # self.stderr.flush()
 
     def flush(self):
         self.file.flush()
@@ -55,6 +58,7 @@ class Tee(object):
 
     def close(self):
         sys.stdout = self.stdout
+        # sys.stderr = self.stderr
         self.file.close()
 
 
