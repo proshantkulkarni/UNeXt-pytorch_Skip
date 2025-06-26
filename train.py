@@ -318,23 +318,56 @@ def main():
             params, lr=config['lr'], weight_decay=config['weight_decay'])
     elif config['optimizer'] == 'SGD':
         optimizer = optim.SGD(params, lr=config['lr'], momentum=config['momentum'],
-                              nesterov=config['nesterov'], weight_decay=config['weight_decay'])
+                            nesterov=config['nesterov'], weight_decay=config['weight_decay'])
     else:
         raise NotImplementedError
+
+    checkpoint_path = os.path.join(save_dir, 'checkpoint.pth')
+    start_epoch = 0
+
+    if os.path.exists(checkpoint_path):
+        print(" Loading checkpoint...")
+        checkpoint = torch.load(checkpoint_path)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        if scheduler and checkpoint['scheduler_state_dict']:
+            scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+        start_epoch = checkpoint['epoch'] + 1
+        trigger = checkpoint['trigger']
+        best_iou = checkpoint['best_iou']
+        log = checkpoint['log']
+        print(f"✅ Resumed from epoch {start_epoch}, best IOU so far: {best_iou:.4f}")
+    else:
+        trigger = 0
+        best_iou = 0
+        log = OrderedDict([
+            ('epoch', []), ('lr', []), ('loss', []), ('iou', []),
+            ('val_loss', []), ('val_iou', []), ('val_dice', []),
+            ('epoch_time', [])
+        ])
 
     if config['scheduler'] == 'CosineAnnealingLR':
         scheduler = lr_scheduler.CosineAnnealingLR(
             optimizer, T_max=config['epochs'], eta_min=config['min_lr'])
     elif config['scheduler'] == 'ReduceLROnPlateau':
-        scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, factor=config['factor'], patience=config['patience'],
-                                                   verbose=1, min_lr=config['min_lr'])
+        scheduler = lr_scheduler.ReduceLROnPlateau(...)
     elif config['scheduler'] == 'MultiStepLR':
-        scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[int(e) for e in config['milestones'].split(',')], gamma=config['gamma'])
+        scheduler = lr_scheduler.MultiStepLR(...)
     elif config['scheduler'] == 'ConstantLR':
         scheduler = None
+
+    
+    # model = model.to(device)
+
+    params = filter(lambda p: p.requires_grad, model.parameters())
+    if config['optimizer'] == 'Adam':
+        optimizer = optim.Adam(
+            params, lr=config['lr'], weight_decay=config['weight_decay'])
+    elif config['optimizer'] == 'SGD':
+        optimizer = optim.SGD(params, lr=config['lr'], momentum=config['momentum'],
+                              nesterov=config['nesterov'], weight_decay=config['weight_decay'])
     else:
         raise NotImplementedError
-
 
     train_img_paths = glob(os.path.join(config['dataset'], 'train', 'images', '*' + config['img_ext']))
     val_img_paths = glob(os.path.join(config['dataset'], 'val', 'images', '*' + config['img_ext']))
@@ -423,7 +456,7 @@ def main():
     trigger = 0
 
     total_start = time.time()
-    for epoch in range(config['epochs']):
+    for epoch in range(start_epoch, config['epochs']):
         print('Epoch [%d/%d]' % (epoch, config['epochs']))
         epoch_start = time.time()
     
@@ -466,7 +499,18 @@ def main():
             # torch.save(model.state_dict(), '/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s/model.pth' %
             #            config['name'])
             model_path = os.path.join(save_dir, "model.pth")
-            torch.save(model.state_dict(), os.path.join(save_dir, "model.pth"))
+            # torch.save(model.state_dict(), os.path.join(save_dir, "model.pth"))
+            checkpoint = {
+                            'model_state_dict': model.state_dict(),
+                            'optimizer_state_dict': optimizer.state_dict(),
+                            'scheduler_state_dict': scheduler.state_dict() if scheduler else None,
+                            'epoch': epoch,
+                            'trigger': trigger,
+                            'best_iou': best_iou,
+                            'log': log
+                        }
+            torch.save(checkpoint, os.path.join(save_dir, 'checkpoint.pth'))
+            torch.save(model.state_dict(), os.path.join(save_dir, 'model.pth'))
             best_iou = val_log['iou']
             print("=> saved best model")
             print(f" New best model saved at: {model_path}")
