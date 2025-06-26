@@ -327,7 +327,8 @@ def main():
 
     if os.path.exists(checkpoint_path):
         print(" Loading checkpoint...")
-        checkpoint = torch.load(checkpoint_path)
+        # checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         if scheduler and checkpoint['scheduler_state_dict']:
