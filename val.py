@@ -127,7 +127,8 @@ def main():
 
                     # Save output images
                     # dest_dir = '/content/drive/MyDrive/Amit-Paper3/results_isic_1_final_original'
-                    dest_dir = os.path.join("results", args.name)
+                    # dest_dir = os.path.join("results", args.name)
+                    dest_dir = os.path.join("models", args.name, "results")
                     os.makedirs(dest_dir, exist_ok=True)
                     cv2.imwrite(os.path.join(dest_dir, f"{meta['img_id'][i]}.png"), (output[i, c] * 255).astype('uint8'))
 
