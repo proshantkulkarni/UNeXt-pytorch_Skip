@@ -262,6 +262,10 @@ def main():
                 print(f"❌ ERROR: Checkpoint trained with arch={prev_config['arch']} but current config uses arch={config['arch']}")
                 exit(1)
 
+    print('-' * 20)
+    for key in config:
+        print('%s: %s' % (key, config[key]))
+    print('-' * 20)
     # === Initialize logging and device ===
     log_file_path = os.path.join(save_dir, "terminal_output.log")
     # === Ensure save_dir exists ===
