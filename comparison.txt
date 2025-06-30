@@ -1,0 +1,12 @@
+Fair Comparison :
+
+
+1. Baseline - Metric (Which we created)
+	
+
+		Early stop - 50.
+		Val Loss
+
+2. 2 - 3 Experiment
+
+2. Best Declare - Test Loss/ Test IoU
