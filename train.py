@@ -27,11 +27,11 @@ from utils import AverageMeter, str2bool
 
 # from archs_semantic_map import UNext
 # import archs_CTrans
-import archs
-# import archs_DCA
+# import archs
+import archs_DCA
 
-ARCH_NAMES = archs.__all__
-# ARCH_NAMES = archs_DCA.__all__
+# ARCH_NAMES = archs.__all__
+ARCH_NAMES = archs_DCA.__all__
 # ARCH_NAMES = archs_CTrans.__all__
 LOSS_NAMES = losses.__all__
 LOSS_NAMES.append('BCEWithLogitsLoss')
@@ -278,17 +278,17 @@ def main():
     set_seed(42)
 
     # === Create model ===
-    # model = archs_DCA.__dict__[config['arch']](
-    #     config['num_classes'],
-    #     config['input_channels'],
-    #     config['deep_supervision']
-    # ).to(device)
-
-    model = archs.__dict__[config['arch']](
+    model = archs_DCA.__dict__[config['arch']](
         config['num_classes'],
         config['input_channels'],
         config['deep_supervision']
     ).to(device)
+
+    # model = archs.__dict__[config['arch']](
+    #     config['num_classes'],
+    #     config['input_channels'],
+    #     config['deep_supervision']
+    # ).to(device)
 
     # === Create optimizer and scheduler ===
     params = filter(lambda p: p.requires_grad, model.parameters())
