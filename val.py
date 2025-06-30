@@ -15,7 +15,7 @@ import archs_CTrans
 # import archs
 # import archs_DCA
 
-import archs_CTrans_wavelet
+# import archs_CTrans_wavelet
 from dataset import Dataset
 from metrics import iou_score
 from utils import AverageMeter
