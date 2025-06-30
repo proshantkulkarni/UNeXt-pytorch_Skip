@@ -215,6 +215,7 @@ class UNext(nn.Module):
         super().__init__()
         
         ctrans_config = get_CTranS_config()
+        print("CTrans_Wavelet UNext Initiated")
         # self.ctran = ChannelTransformer(ctrans_config, vis=False, img_size=224, channel_num=[16, 32, 128, 256], patchSize=[32, 16, 8, 4])
         self.ctran = ChannelTransformer(
                         ctrans_config,

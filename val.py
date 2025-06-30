@@ -61,10 +61,22 @@ def main():
         transforms.Normalize(),
     ])
 
+    test_img_dir = os.path.join(config['dataset'], 'test', 'images')
+    test_mask_dir = os.path.join(config['dataset'], 'test', 'masks')
+
+    # val_dataset = Dataset(
+    #     img_ids=val_img_ids,
+    #     img_dir=os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/test', 'images'),
+    #     mask_dir=os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/test', 'masks'),
+    #     img_ext=config['img_ext'],
+    #     mask_ext=config['mask_ext'],
+    #     num_classes=config['num_classes'],
+    #     transform=val_transform)
+    
     val_dataset = Dataset(
         img_ids=val_img_ids,
-        img_dir=os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/test', 'images'),
-        mask_dir=os.path.join('/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic/test', 'masks'),
+        img_dir=test_img_dir,
+        mask_dir=test_mask_dir,
         img_ext=config['img_ext'],
         mask_ext=config['mask_ext'],
         num_classes=config['num_classes'],
@@ -114,7 +126,8 @@ def main():
                     fn_list[c] += fn
 
                     # Save output images
-                    dest_dir = '/content/drive/MyDrive/Amit-Paper3/results_isic_1_final_original'
+                    # dest_dir = '/content/drive/MyDrive/Amit-Paper3/results_isic_1_final_original'
+                    dest_dir = os.path.join("results", args.name)
                     os.makedirs(dest_dir, exist_ok=True)
                     cv2.imwrite(os.path.join(dest_dir, f"{meta['img_id'][i]}.png"), (output[i, c] * 255).astype('uint8'))
 

@@ -213,6 +213,7 @@ class UNext(nn.Module):
                  depths=[1, 1, 1], sr_ratios=[8, 4, 2, 1], **kwargs):
         super().__init__()
         
+        print("Fusion UNext Initiated")
         self.fuse = FuseModule(base_channel=16, nb_blocks=2)  # base_channel = t1's channel count
         self.t4_reducer = nn.Conv2d(160, 128, kernel_size=1)
 

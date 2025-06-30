@@ -225,6 +225,7 @@ class UNext(nn.Module):
                 spatial_head=[4, 4, 4, 4]
             )
 
+        print("DCA UNext Initiated")
         self.encoder1 = nn.Conv2d(3, 16, 3, stride=1, padding=1)  
         self.encoder2 = nn.Conv2d(16, 32, 3, stride=1, padding=1)  
         self.encoder3 = nn.Conv2d(32, 128, 3, stride=1, padding=1)
