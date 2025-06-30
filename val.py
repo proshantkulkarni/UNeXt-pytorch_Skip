@@ -62,7 +62,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    log_file_path = os.path.join("models", args.name, "terminal_output.log")
+    log_file_path = os.path.join("models", args.name, "terminal_output_TEST.log")
     os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
     tee = Tee(log_file_path)
 
