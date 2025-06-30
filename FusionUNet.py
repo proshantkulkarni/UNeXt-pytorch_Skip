@@ -44,7 +44,7 @@ class FuseBlock(nn.Module):
         self.norm3 = nn.BatchNorm2d(base_channels * 4)
         self.norm4 = nn.BatchNorm2d(base_channels * 8)
 
-
+        
         self.up3 = UpFuseBlock(base_channels=base_channels * 4)
         self.up2 = UpFuseBlock(base_channels=base_channels * 2)
         self.up1 = UpFuseBlock(base_channels=base_channels)

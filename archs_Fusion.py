@@ -216,6 +216,7 @@ class UNext(nn.Module):
         print("Fusion UNext Initiated")
         self.fuse = FuseModule(base_channel=16, nb_blocks=2)  # base_channel = t1's channel count
         self.t4_reducer = nn.Conv2d(160, 128, kernel_size=1)
+        self.t3_reducer = nn.Conv2d(128, 64, kernel_size=1)
 
         self.encoder1 = nn.Conv2d(3, 16, 3, stride=1, padding=1)  
         self.encoder2 = nn.Conv2d(16, 32, 3, stride=1, padding=1)  
@@ -228,6 +229,7 @@ class UNext(nn.Module):
         self.norm3 = norm_layer(embed_dims[1])
         self.norm4 = norm_layer(embed_dims[2])
 
+        
         self.dnorm3 = norm_layer(160)
         self.dnorm4 = norm_layer(128)
 
@@ -289,6 +291,13 @@ class UNext(nn.Module):
         out = F.relu(F.max_pool2d(self.ebn3(self.encoder3(out)),2,2))
         t3 = out
 
+        # if t3.shape[1] != 64:
+        #     t3 = self.t3_reducer(t3)
+        
+        # Create reduced copy for Fusion
+        t3_reduced = self.t3_reducer(t3) if t3.shape[1] != 64 else t3
+
+
         ### Tokenized MLP Stage
         ### Stage 4
 
@@ -299,13 +308,24 @@ class UNext(nn.Module):
         out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
     
         t4 = out
-        if t4.shape[1] != 128:  # ensure compatible with Fusion block
-            t4 = self.t4_reducer(t4)
+        # if t4.shape[1] != 128:  # ensure compatible with Fusion block
+        #     t4 = self.t4_reducer(t4)
+
+        # Create reduced copy for Fusion
+        t4_reduced = self.t4_reducer(t4) if t4.shape[1] != 128 else t4
 
         # Apply fusion to t1–t4
-        t1, t2, t3, t4 = self.fuse(t1, t2, t3, t4)
 
+        print("t1:", t1.shape)
+        print("t2:", t2.shape)
+        print("t3:", t3.shape)
+        print("t4:", t4.shape)
 
+        # t1, t2, t3, t4 = self.fuse(t1, t2, t3, t4)
+        # t1, t2, t3, t4_fused = self.fuse(t1, t2, t3, t4_reduced)
+        t1, t2, t3_fused, t4_fused = self.fuse(t1, t2, t3_reduced, t4_reduced)
+
+        
         ### Bottleneck
 
         out ,H,W= self.patch_embed4(out)
@@ -332,6 +352,7 @@ class UNext(nn.Module):
         out = self.dnorm3(out)
         out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
         out = F.relu(F.interpolate(self.dbn2(self.decoder2(out)),scale_factor=(2,2),mode ='bilinear'))
+
         if t3.shape[2:] != out.shape[2:]:
            t3 = F.interpolate(t3, size=out.shape[2:], mode='bilinear', align_corners=True)
 
