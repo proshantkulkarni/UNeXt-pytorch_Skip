@@ -490,6 +490,8 @@ def main():
     total_duration = total_end - total_start
     print(f"\n✅ Training complete in {total_duration / 60:.2f} minutes ({total_duration:.2f} seconds)")
 
+    with open(os.path.join(save_dir, "config.yml"), "w") as f:
+        yaml.dump(config, f)
     print("📉 Saving training plots...")
 
     def plot_and_save(metrics_dict, title, ylabel, save_path):

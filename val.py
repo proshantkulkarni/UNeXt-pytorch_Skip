@@ -20,10 +20,15 @@ import numpy as np
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', default=None, help='model name')
+    parser.add_argument('--batch_size', type=int, default=None, help='batch size override')
     return parser.parse_args()
+
 
 def main():
     args = parse_args()
+
+    if args.batch_size is not None:
+        config['batch_size'] = args.batch_size
 
     config_path = os.path.join("models", args.name, "config.yml")
     model_path = os.path.join("models", args.name, "model.pth")
