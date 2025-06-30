@@ -17,6 +17,36 @@ from utils import AverageMeter
 from albumentations import Resize
 import numpy as np
 
+import sys
+
+class Tee:
+    def __init__(self, name, mode="w"):
+        self.file = open(name, mode)
+        self.stdout = sys.stdout
+        sys.stdout = self
+
+    def write(self, data):
+        # Write to file
+        self.file.write(data)
+        self.file.flush()
+        # For tqdm compatibility, use tqdm.write for non-empty lines without breaking bars
+        if data.strip() != "":
+            try:
+                from tqdm import tqdm
+                tqdm.write(data, end='')
+            except:
+                self.stdout.write(data)
+        else:
+            self.stdout.write(data)
+
+    def flush(self):
+        self.file.flush()
+        self.stdout.flush()
+
+    def close(self):
+        sys.stdout = self.stdout
+        self.file.close()
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', default=None, help='model name')
@@ -26,6 +56,10 @@ def parse_args():
 
 def main():
     args = parse_args()
+
+    log_file_path = os.path.join("models", args.name, "terminal_output.log")
+    os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+    tee = Tee(log_file_path)
 
     config_path = os.path.join("models", args.name, "config.yml")
     model_path = os.path.join("models", args.name, "model.pth")
@@ -37,7 +71,7 @@ def main():
 
     if args.batch_size is not None:
         config['batch_size'] = args.batch_size
-        
+
     print('-'*20)
     for key in config.keys():
         print(f'{key}: {config[key]}')
@@ -162,6 +196,8 @@ def main():
     print("Mean IoU:", np.mean([iou_avg_meter.avg]))
 
     torch.cuda.empty_cache()
+    tee.close()
+
 
 if __name__ == '__main__':
     main()
