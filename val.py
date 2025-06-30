@@ -27,9 +27,6 @@ def parse_args():
 def main():
     args = parse_args()
 
-    if args.batch_size is not None:
-        config['batch_size'] = args.batch_size
-
     config_path = os.path.join("models", args.name, "config.yml")
     model_path = os.path.join("models", args.name, "model.pth")
 
@@ -38,10 +35,14 @@ def main():
     # with open('/content/drive/MyDrive/Amit-Paper3/ISIC_1_original/isic_exp/config.yml', 'r') as f:
     #     config = yaml.load(f, Loader=yaml.FullLoader)
 
+    if args.batch_size is not None:
+        config['batch_size'] = args.batch_size
+        
     print('-'*20)
     for key in config.keys():
         print(f'{key}: {config[key]}')
     print('-'*20)
+
 
     cudnn.benchmark = True
 
