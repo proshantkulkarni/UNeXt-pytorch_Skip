@@ -316,10 +316,10 @@ class UNext(nn.Module):
 
         # Apply fusion to t1–t4
 
-        print("t1:", t1.shape)
-        print("t2:", t2.shape)
-        print("t3:", t3.shape)
-        print("t4:", t4.shape)
+        # print("t1:", t1.shape)
+        # print("t2:", t2.shape)
+        # print("t3:", t3.shape)
+        # print("t4:", t4.shape)
 
         # t1, t2, t3, t4 = self.fuse(t1, t2, t3, t4)
         # t1, t2, t3, t4_fused = self.fuse(t1, t2, t3, t4_reduced)
