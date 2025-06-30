@@ -10,7 +10,8 @@ from albumentations.core.composition import Compose
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
-import archs
+# import archs
+import archs_DCA
 from dataset import Dataset
 from metrics import iou_score
 from utils import AverageMeter
@@ -81,7 +82,11 @@ def main():
     cudnn.benchmark = True
 
     print(f"=> creating model {config['arch']}")
-    model = archs.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+
+
+    # model = archs.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+
+    model = archs_DCA.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
     # model.load_state_dict(torch.load('/content/drive/MyDrive/Amit-Paper3/ISIC_1_original/isic_exp/model.pth', weights_only=True))
     model.load_state_dict(torch.load(model_path))
     model.eval()
