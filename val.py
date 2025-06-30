@@ -62,6 +62,8 @@ def parse_args():
 def main():
     args = parse_args()
 
+    # log_file = open(log_file_path, "w")
+
     log_file_path = os.path.join("models", args.name, "terminal_output_TEST.log")
     os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
     tee = Tee(log_file_path)
@@ -208,6 +210,31 @@ def main():
     print("Mean IoU:", np.mean([iou_avg_meter.avg]))
 
     torch.cuda.empty_cache()
+    # === Save final metrics ===
+    import pandas as pd
+
+# === Save final metrics to CSV ===
+    metrics_path = os.path.join("models", args.name, "metrics_results.csv")
+
+    # Create a dictionary of metrics
+    metrics = {
+        'IoU': [float(iou_avg_meter.avg)],
+        'Dice': [float(dice_avg_meter.avg)],
+        'Overall_Precision': [float(overall_precision)],
+        'Overall_Recall': [float(overall_recall)],
+    }
+
+    # Add per-class precision and recall
+    for idx, (p, r) in enumerate(zip(precision, recall)):
+        metrics[f'Precision_class_{idx}'] = [float(p)]
+        metrics[f'Recall_class_{idx}'] = [float(r)]
+
+    # Convert to DataFrame and save
+    df = pd.DataFrame(metrics)
+    df.to_csv(metrics_path, index=False)
+
+    print(f"✅ Saved metrics to {metrics_path}")
+
     tee.close()
 
 
