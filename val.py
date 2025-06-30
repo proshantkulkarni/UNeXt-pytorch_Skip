@@ -12,8 +12,8 @@ from tqdm import tqdm
 
 # import archs
 # import archs_CTrans
-import archs
-# import archs_DCA
+# import archs
+import archs_DCA
 
 import archs_CTrans_wavelet
 from dataset import Dataset
@@ -90,9 +90,9 @@ def main():
     print(f"=> creating model {config['arch']}")
 
 
-    model = archs.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+    # model = archs.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
-    # model = archs_DCA.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+    model = archs_DCA.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
     # model = archs_CTrans.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
