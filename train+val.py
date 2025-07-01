@@ -667,7 +667,7 @@ def main():
 
     torch.cuda.empty_cache()
     # === Save final metrics ===
-    import pandas as pd
+    # import pandas as pd
 
 # === Save final metrics to CSV ===
     # metrics_path = os.path.join("models", args.name, "metrics_results.csv")
