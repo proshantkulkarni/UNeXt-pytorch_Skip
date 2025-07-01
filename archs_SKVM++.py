@@ -20,6 +20,7 @@ import math
 from abc import ABCMeta, abstractmethod
 # from mmcv.cnn import ConvModule
 import pdb
+
 from skm import PVMLayer
 
 
@@ -218,10 +219,11 @@ class UNext(nn.Module):
         self.encoder2 = nn.Conv2d(16, 32, 3, stride=1, padding=1)  
         self.encoder3 = nn.Conv2d(32, 128, 3, stride=1, padding=1)
 
-        self.skip_pvm_t4 = PVMLayer(input_dim=160 + 160, output_dim=160)
-        self.skip_pvm_t3 = PVMLayer(input_dim=128 + 128, output_dim=128)
-        self.skip_pvm_t2 = PVMLayer(input_dim=32 + 32, output_dim=32)
-        self.skip_pvm_t1 = PVMLayer(input_dim=16 + 16, output_dim=16)
+        # PVMLayer-based skip fusion modules
+        self.skip1_pvm = PVMLayer(input_dim=16, output_dim=16)
+        self.skip2_pvm = PVMLayer(input_dim=32, output_dim=32)
+        self.skip3_pvm = PVMLayer(input_dim=128, output_dim=128)
+        # Adjust input_dim/output_dim as per each stage’s channel dimension
 
         self.ebn1 = nn.BatchNorm2d(16)
         self.ebn2 = nn.BatchNorm2d(32)
@@ -312,16 +314,14 @@ class UNext(nn.Module):
         ### Stage 4
 
         out = F.relu(F.interpolate(self.dbn1(self.decoder1(out)),scale_factor=(2,2),mode ='bilinear'))
-        
         if t4.shape[2:] != out.shape[2:]:
-            t4 = F.interpolate(t4, size=out.shape[2:], mode='bilinear', align_corners=True)
+           t4 = F.interpolate(t4, size=out.shape[2:], mode='bilinear', align_corners=True)
 
-        out = torch.add(out, t4)  # residual addition
-        skip_input = torch.cat([out, t4], dim=1)
-        out = self.skip_pvm_t4(skip_input)
-
+        
         # out = torch.add(out,t4)
-        # PVM PASSING
+        # Concatenate along channel dim and pass through PVM
+        skip_feat = torch.cat([out, t4], dim=1)                 # SK VM ++ Layer
+        out = self.pvm_t3_t4(skip_feat)
 
         _,_,H,W = out.shape
         out = out.flatten(2).transpose(1,2)
@@ -333,13 +333,14 @@ class UNext(nn.Module):
         out = self.dnorm3(out)
         out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
         out = F.relu(F.interpolate(self.dbn2(self.decoder2(out)),scale_factor=(2,2),mode ='bilinear'))
-        
         if t3.shape[2:] != out.shape[2:]:
-            t3 = F.interpolate(t3, size=out.shape[2:], mode='bilinear', align_corners=True)
+           t3 = F.interpolate(t3, size=out.shape[2:], mode='bilinear', align_corners=True)
 
-        out = torch.add(out, t3)
-        skip_input = torch.cat([out, t3], dim=1)
-        out = self.skip_pvm_t3(skip_input)
+          
+        # out = torch.add(out,t3)
+        # t3 skip
+        skip_feat = torch.cat([out, t3], dim=1)
+        out = self.pvm_t2_t3(skip_feat)
 
         _,_,H,W = out.shape
         out = out.flatten(2).transpose(1,2)
@@ -351,25 +352,18 @@ class UNext(nn.Module):
         out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
 
         out = F.relu(F.interpolate(self.dbn3(self.decoder3(out)),scale_factor=(2,2),mode ='bilinear'))
-
         if t2.shape[2:] != out.shape[2:]:
-            t2 = F.interpolate(t2, size=out.shape[2:], mode='bilinear', align_corners=True)
-
-        out = torch.add(out, t2)
-        skip_input = torch.cat([out, t2], dim=1)
-        out = self.skip_pvm_t2(skip_input)
-
+           t2 = F.interpolate(t2, size=out.shape[2:], mode='bilinear', align_corners=True)
+        # out = torch.add(out,t2)
+        # t2 skip
+        skip_feat = torch.cat([out, t2], dim=1)
+        out = self.pvm_t1_t2(skip_feat)
 
 
         out = F.relu(F.interpolate(self.dbn4(self.decoder4(out)),scale_factor=(2,2),mode ='bilinear'))
-
         if t1.shape[2:] != out.shape[2:]:
-            t1 = F.interpolate(t1, size=out.shape[2:], mode='bilinear', align_corners=True)
-
-        out = torch.add(out, t1)
-        skip_input = torch.cat([out, t1], dim=1)
-        out = self.skip_pvm_t1(skip_input)
-
+          t1 = F.interpolate(t1, size=out.shape[2:], mode='bilinear', align_corners=True)
+        out = torch.add(out,t1)
         out = F.relu(F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear'))
 
         return self.final(out)
