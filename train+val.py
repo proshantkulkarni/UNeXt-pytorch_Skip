@@ -441,8 +441,8 @@ def main():
 
     total_start = time.time()
 
-    # for epoch in range(start_epoch, config['epochs']):
-    for epoch in range(5):
+    for epoch in range(start_epoch, config['epochs']):
+    # for epoch in range(5):
         print('Epoch [%d/%d]' % (epoch, config['epochs']))
         epoch_start = time.time()
     
