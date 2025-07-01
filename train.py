@@ -30,15 +30,15 @@ from utils import AverageMeter, str2bool
 # import archs
 # import archs_DCA
 
-# import archs_Fusion
+import archs_Fusion
 
-import archs_CTrans_wavelet
+# import archs_CTrans_wavelet
 # ARCH_NAMES = archs.__all__
 # ARCH_NAMES = archs_DCA.__all__
-ARCH_NAMES = archs_CTrans_wavelet.__all__
+# ARCH_NAMES = archs_CTrans_wavelet.__all__
 # ARCH_NAMES = archs_CTrans.__all__
 
-# ARCH_NAMES = archs_Fusion.__all__
+ARCH_NAMES = archs_Fusion.__all__
 LOSS_NAMES = losses.__all__
 LOSS_NAMES.append('BCEWithLogitsLoss')
 
@@ -296,18 +296,18 @@ def main():
     #     config['deep_supervision']
     # ).to(device)
 
-    # model = archs_Fusion.__dict__[config['arch']](
-    #     config['num_classes'],
-    #     config['input_channels'],
-    #     config['deep_supervision']
-    # ).to(device)
-
-
-    model = archs_CTrans_wavelet.__dict__[config['arch']](
+    model = archs_Fusion.__dict__[config['arch']](
         config['num_classes'],
         config['input_channels'],
         config['deep_supervision']
     ).to(device)
+
+
+    # model = archs_CTrans_wavelet.__dict__[config['arch']](
+    #     config['num_classes'],
+    #     config['input_channels'],
+    #     config['deep_supervision']
+    # ).to(device)
 
     # model = archs.__dict__[config['arch']](
     #     config['num_classes'],
