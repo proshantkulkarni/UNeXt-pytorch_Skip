@@ -28,17 +28,17 @@ from metrics import iou_score
 from utils import AverageMeter, str2bool
 
 # from archs_semantic_map import UNext
-import archs_CTrans
+# import archs_CTrans
 # import archs
 # import archs_DCA
 
 # import archs_Fusion
 
-# import archs_CTrans_wavelet
+import archs_CTrans_wavelet
 # ARCH_NAMES = archs.__all__
 # ARCH_NAMES = archs_DCA.__all__
-# ARCH_NAMES = archs_CTrans_wavelet.__all__
-ARCH_NAMES = archs_CTrans.__all__
+ARCH_NAMES = archs_CTrans_wavelet.__all__
+# ARCH_NAMES = archs_CTrans.__all__
 
 # ARCH_NAMES = archs_Fusion.__all__
 LOSS_NAMES = losses.__all__
@@ -292,11 +292,11 @@ def main():
     #     config['deep_supervision']
     # ).to(device)
 
-    model = archs_CTrans.__dict__[config['arch']](
-        config['num_classes'],
-        config['input_channels'],
-        config['deep_supervision']
-    ).to(device)
+    # model = archs_CTrans.__dict__[config['arch']](
+    #     config['num_classes'],
+    #     config['input_channels'],
+    #     config['deep_supervision']
+    # ).to(device)
 
     # model = archs_Fusion.__dict__[config['arch']](
     #     config['num_classes'],
@@ -305,11 +305,11 @@ def main():
     # ).to(device)
 
 
-    # model = archs_CTrans_wavelet.__dict__[config['arch']](
-    #     config['num_classes'],
-    #     config['input_channels'],
-    #     config['deep_supervision']
-    # ).to(device)
+    model = archs_CTrans_wavelet.__dict__[config['arch']](
+        config['num_classes'],
+        config['input_channels'],
+        config['deep_supervision']
+    ).to(device)
 
     # model = archs.__dict__[config['arch']](
     #     config['num_classes'],
