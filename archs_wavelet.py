@@ -316,7 +316,8 @@ class UNext(nn.Module):
         ### Tokenized MLP Stage
         ### Stage 4
 
-        out,H,W = self.patch_embed3(out)
+        out,H,W = self.patch_embed3(x3)
+
         for i, blk in enumerate(self.block1):
             out = blk(out, H, W)
         out = self.norm3(out)
@@ -512,3 +513,8 @@ class UNext(nn.Module):
 
 
 #EOF
+
+# model = UNext(num_classes=1)
+# x = torch.randn(2, 3, 256, 256)
+# out = model(x)
+# print(out.shape)  # Expect (2, 1, 256, 256)
