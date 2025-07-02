@@ -151,6 +151,19 @@ def get_filter_tensors(wavelet, flip, device):
                 return filter.unsqueeze(0).to(device)
             else:
                 return torch.tensor(filter, device=device).unsqueeze(0)
+
+    # def create_tensor(filter):
+    #     if flip:
+    #         if isinstance(filter, torch.Tensor):
+    #             return filter.flip(-1).unsqueeze(0).to(device).requires_grad_()
+    #         else:
+    #             return torch.tensor(filter[::-1], device=device, requires_grad=True).unsqueeze(0)
+    #     else:
+    #         if isinstance(filter, torch.Tensor):
+    #             return filter.unsqueeze(0).to(device).requires_grad_()
+    #         else:
+    #             return torch.tensor(filter, device=device, requires_grad=True).unsqueeze(0)
+
     dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
     dec_lo = create_tensor(dec_lo)
     dec_hi = create_tensor(dec_hi)
@@ -429,3 +442,6 @@ def conv_ifwt(coeffs: list, wavelet) -> torch.tensor:
         if padr > 0:
             res_lo = res_lo[..., :-padr]
     return res_lo
+
+
+

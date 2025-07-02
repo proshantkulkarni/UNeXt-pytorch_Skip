@@ -38,11 +38,9 @@ from utils import AverageMeter, str2bool
 # import archs_Fusion
 # ARCH_NAMES = archs_Fusion.__all__
 
-# import archs_wavelet
-# ARCH_NAMES = archs_wavelet.__all__
+import archs_wavelet
+ARCH_NAMES = archs_wavelet.__all__
 
-import archs_DCA_wavelet
-ARCH_NAMES = archs_DCA_wavelet.__all__
 
 # import archs_CTrans_wavelet
 # ARCH_NAMES = archs_CTrans_wavelet.__all__
@@ -312,17 +310,12 @@ def main():
     #     config['deep_supervision']
     # ).to(device)
 
-    # model = archs_wavelet.__dict__[config['arch']](
-    #     config['num_classes'],
-    #     config['input_channels'],
-    #     config['deep_supervision']
-    # ).to(device)
-
-    model = archs_DCA_wavelet.__dict__[config['arch']](
+    model = archs_wavelet.__dict__[config['arch']](
         config['num_classes'],
         config['input_channels'],
         config['deep_supervision']
     ).to(device)
+
 
     # model = archs_CTrans_wavelet.__dict__[config['arch']](
     #     config['num_classes'],
