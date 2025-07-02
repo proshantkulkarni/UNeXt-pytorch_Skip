@@ -16,8 +16,8 @@ from tqdm import tqdm
 # import archs_DCA
 # import archs_CTrans_wavelet
 # import archs_Fusion
-# import archs_wavelet
-import archs_DCA_wavelet
+import archs_wavelet
+# import archs_DCA_wavelet
 
 from dataset import Dataset
 from metrics import iou_score
@@ -103,9 +103,9 @@ def main():
 
     # model = archs_Fusion.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
-    # model = archs_wavelet.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+    model = archs_wavelet.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
-    model = archs_DCA_wavelet.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+    # model = archs_DCA_wavelet.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
     # model.load_state_dict(torch.load('/content/drive/MyDrive/Amit-Paper3/ISIC_1_original/isic_exp/model.pth', weights_only=True))
     model.load_state_dict(torch.load(model_path))
