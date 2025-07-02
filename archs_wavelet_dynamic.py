@@ -20,9 +20,6 @@ import math
 from abc import ABCMeta, abstractmethod
 # from mmcv.cnn import ConvModule
 import pdb
-
-
-from dca import DCA  # adjust the path if needed
 import pywt
 
 from wavelet_pool2d import StaticWaveletPool2d
@@ -216,25 +213,10 @@ class UNext(nn.Module):
                  depths=[1, 1, 1], sr_ratios=[8, 4, 2, 1], **kwargs):
         super().__init__()
         
-        self.dca = DCA(
-                features=[16, 32, 128, 160],     # channel sizes of t1, t2, t3, t4
-                strides=[8, 4, 2, 1],            # how much upsampling is needed to match t1 (128×128)
-                patch=16,                        # because t4 has 16×16 resolution from 256×256 input
-                channel_att=True,
-                spatial_att=True,
-                n=1,
-                channel_head=[1, 1, 1, 1],
-                spatial_head=[4, 4, 4, 4]
-            )
-
-        print("DCA UNext Initiated")
+        print("UNext Initiated")
         self.encoder1 = nn.Conv2d(3, 16, 3, stride=1, padding=1)  
         self.encoder2 = nn.Conv2d(16, 32, 3, stride=1, padding=1)  
         self.encoder3 = nn.Conv2d(32, 128, 3, stride=1, padding=1)
-
-        self.pool1 = StaticWaveletPool2d(wavelet=pywt.Wavelet('haar'), scales=1)
-        self.pool2 = StaticWaveletPool2d(wavelet=pywt.Wavelet('haar'), scales=1)
-        self.pool3 = StaticWaveletPool2d(wavelet=pywt.Wavelet('haar'), scales=1)
 
         self.ebn1 = nn.BatchNorm2d(16)
         self.ebn2 = nn.BatchNorm2d(32)
@@ -242,6 +224,10 @@ class UNext(nn.Module):
         
         self.norm3 = norm_layer(embed_dims[1])
         self.norm4 = norm_layer(embed_dims[2])
+
+        self.pool1 = StaticWaveletPool2d(wavelet=pywt.Wavelet('haar'), scales=1)
+        self.pool2 = StaticWaveletPool2d(wavelet=pywt.Wavelet('haar'), scales=1)
+        self.pool3 = StaticWaveletPool2d(wavelet=pywt.Wavelet('haar'), scales=1)
 
         self.dnorm3 = norm_layer(160)
         self.dnorm4 = norm_layer(128)
@@ -298,6 +284,7 @@ class UNext(nn.Module):
         # out = F.relu(F.max_pool2d(self.ebn1(self.encoder1(x)),2,2))
         # t1 = out
 
+        # WAVELET POOLING
         x1 = self.encoder1(x)                   
         x1 = self.ebn1(x1)
         x1 = F.relu(x1)
@@ -314,6 +301,7 @@ class UNext(nn.Module):
         x2 = self.pool2(x2)
         t2 = x2
 
+
         ### Stage 3
         # out = F.relu(F.max_pool2d(self.ebn3(self.encoder3(out)),2,2))
         # t3 = out
@@ -324,11 +312,11 @@ class UNext(nn.Module):
         x3 = self.pool3(x3)
         t3 = x3
 
+
         ### Tokenized MLP Stage
         ### Stage 4
 
-        # out,H,W = self.patch_embed3(out)
-        out, H, W = self.patch_embed3(x3)
+        out,H,W = self.patch_embed3(x3)
 
         for i, blk in enumerate(self.block1):
             out = blk(out, H, W)
@@ -337,11 +325,6 @@ class UNext(nn.Module):
         t4 = out
 
         ### Bottleneck
-
-              
-        # Apply DCA to improve skip connections
-        d1, d2, d3, d4 = self.dca([t1, t2, t3, t4])         # DCA PASSING           
-
 
         out ,H,W= self.patch_embed4(out)
         for i, blk in enumerate(self.block2):
@@ -356,8 +339,7 @@ class UNext(nn.Module):
            t4 = F.interpolate(t4, size=out.shape[2:], mode='bilinear', align_corners=True)
 
         
-        # out = torch.add(out,t4)
-        out = torch.add(out, d4)  # replaces t4
+        out = torch.add(out,t4)
         _,_,H,W = out.shape
         out = out.flatten(2).transpose(1,2)
         for i, blk in enumerate(self.dblock1):
@@ -372,8 +354,7 @@ class UNext(nn.Module):
            t3 = F.interpolate(t3, size=out.shape[2:], mode='bilinear', align_corners=True)
 
           
-        # out = torch.add(out,t3)
-        out = torch.add(out, d3)  # replaces t3
+        out = torch.add(out,t3)
         _,_,H,W = out.shape
         out = out.flatten(2).transpose(1,2)
         
@@ -386,17 +367,13 @@ class UNext(nn.Module):
         out = F.relu(F.interpolate(self.dbn3(self.decoder3(out)),scale_factor=(2,2),mode ='bilinear'))
         if t2.shape[2:] != out.shape[2:]:
            t2 = F.interpolate(t2, size=out.shape[2:], mode='bilinear', align_corners=True)
-        # out = torch.add(out,t2)
-        out = torch.add(out, d2)  # replaces t2
-
+        out = torch.add(out,t2)
 
         out = F.relu(F.interpolate(self.dbn4(self.decoder4(out)),scale_factor=(2,2),mode ='bilinear'))
         if t1.shape[2:] != out.shape[2:]:
           t1 = F.interpolate(t1, size=out.shape[2:], mode='bilinear', align_corners=True)
-        # out = torch.add(out,t1)
-        out = torch.add(out, d1)  # replaces t1
-
-
+        out = torch.add(out,t1)
+        
         out = F.relu(F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear'))
 
         return self.final(out)
@@ -535,14 +512,9 @@ class UNext(nn.Module):
 #         return self.final(out)
 
 
-if __name__ == '__main__':
-    model = UNext(num_classes=1, input_channels=3)
-    model.eval()
-
-    dummy_input = torch.randn(1, 3, 256, 256)
-    with torch.no_grad():
-        output = model(dummy_input)
-
-    print(f"✅ Forward pass successful! Output shape: {output.shape}")
-
 #EOF
+
+# model = UNext(num_classes=1)
+# x = torch.randn(2, 3, 256, 256)
+# out = model(x)
+# print(out.shape)  # Expect (2, 1, 256, 256)
