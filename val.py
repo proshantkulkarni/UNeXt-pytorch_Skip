@@ -16,8 +16,10 @@ from tqdm import tqdm
 # import archs_DCA
 # import archs_CTrans_wavelet
 # import archs_Fusion
-import archs_wavelet
+# import archs_wavelet
 # import archs_DCA_wavelet
+
+import archs_topformer  
 
 from dataset import Dataset
 from metrics import iou_score
@@ -95,6 +97,8 @@ def main():
 
     # model = archs.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
+    model = archs_topformer.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+
     # model = archs_DCA.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
     # model = archs_CTrans.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
@@ -103,7 +107,7 @@ def main():
 
     # model = archs_Fusion.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
-    model = archs_wavelet.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+    # model = archs_wavelet.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
     # model = archs_DCA_wavelet.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 

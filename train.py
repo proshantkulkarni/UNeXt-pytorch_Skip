@@ -32,14 +32,17 @@ from utils import AverageMeter, str2bool
 # import archs
 # ARCH_NAMES = archs.__all__
 
+import archs_topformer
+ARCH_NAMES = archs_topformer.__all__
+
 # import archs_DCA
 # ARCH_NAMES = archs_DCA.__all__
 
 # import archs_Fusion
 # ARCH_NAMES = archs_Fusion.__all__
 
-import archs_wavelet
-ARCH_NAMES = archs_wavelet.__all__
+# import archs_wavelet
+# ARCH_NAMES = archs_wavelet.__all__
 
 
 # import archs_CTrans_wavelet
@@ -310,11 +313,11 @@ def main():
     #     config['deep_supervision']
     # ).to(device)
 
-    model = archs_wavelet.__dict__[config['arch']](
-        config['num_classes'],
-        config['input_channels'],
-        config['deep_supervision']
-    ).to(device)
+    # model = archs_wavelet.__dict__[config['arch']](
+    #     config['num_classes'],
+    #     config['input_channels'],
+    #     config['deep_supervision']
+    # ).to(device)
 
 
     # model = archs_CTrans_wavelet.__dict__[config['arch']](
@@ -328,6 +331,12 @@ def main():
     #     config['input_channels'],
     #     config['deep_supervision']
     # ).to(device)
+
+    model = archs_topformer.__dict__[config['arch']](
+        config['num_classes'],
+        config['input_channels'],
+        config['deep_supervision']
+    ).to(device)
 
     # === Create optimizer and scheduler ===
     params = filter(lambda p: p.requires_grad, model.parameters())
