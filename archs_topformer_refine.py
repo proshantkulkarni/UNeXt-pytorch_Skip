@@ -313,6 +313,12 @@ class UNext(nn.Module):
         self.sim2 = InjectionMultiSumCBR(inp=32, oup=32)    # for t2 skip
         self.sim1 = InjectionMultiSumCBR(inp=16, oup=16)    # for t1 skip
 
+        self.global_refine = nn.Sequential(
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True)
+        )
+
         self.global_proj4 = nn.Conv2d(256, 160, kernel_size=1)
         self.global_proj3 = nn.Conv2d(256, 128, kernel_size=1)
         self.global_proj2 = nn.Conv2d(256, 32, kernel_size=1)
@@ -363,7 +369,8 @@ class UNext(nn.Module):
         out = self.norm4(out)
         out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
 
-        global_semantics = out  # bottleneck output
+        # global_semantics = out  # bottleneck output
+        global_semantics = self.global_refine(out)
 
         ### Stage 4
 
@@ -408,18 +415,18 @@ class UNext(nn.Module):
         if t2.shape[2:] != out.shape[2:]:
            t2 = F.interpolate(t2, size=out.shape[2:], mode='bilinear', align_corners=True)
 
-        # out = torch.add(out,t2)
-        global_semantics_2 = self.global_proj2(global_semantics)
-        out = self.sim2(t2, global_semantics_2)
+        out = torch.add(out,t2)
+        # global_semantics_2 = self.global_proj2(global_semantics)
+        # out = self.sim2(t2, global_semantics_2)
 
         out = F.relu(F.interpolate(self.dbn4(self.decoder4(out)),scale_factor=(2,2),mode ='bilinear'))
         if t1.shape[2:] != out.shape[2:]:
           t1 = F.interpolate(t1, size=out.shape[2:], mode='bilinear', align_corners=True)
 
 
-        # out = torch.add(out,t1)
-        global_semantics_1 = self.global_proj1(global_semantics)
-        out = self.sim1(t1, global_semantics_1)
+        out = torch.add(out,t1)
+        # global_semantics_1 = self.global_proj1(global_semantics)
+        # out = self.sim1(t1, global_semantics_1)
 
         out = F.relu(F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear'))
 

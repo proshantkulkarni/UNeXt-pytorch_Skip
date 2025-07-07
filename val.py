@@ -19,7 +19,8 @@ from tqdm import tqdm
 # import archs_wavelet
 # import archs_DCA_wavelet
 
-import archs_topformer  
+# import archs_topformer  
+import archs_topformer_refine  
 
 from dataset import Dataset
 from metrics import iou_score
@@ -97,7 +98,9 @@ def main():
 
     # model = archs.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
-    model = archs_topformer.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+    # model = archs_topformer.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+
+    model = archs_topformer_refine.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
     # model = archs_DCA.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
