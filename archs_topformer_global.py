@@ -396,7 +396,7 @@ class UNext(nn.Module):
         encoder_outputs = [t1, t2, t3, t4]
         global_features = self.ppa(encoder_outputs)  # [B, sum of channels, H, W]
 
-        global_features = self.global_proj(global_features)  # optional
+        # global_features = self.global_proj(global_features)  # optional
 
         B, C, H, W = global_features.shape
         global_flat = global_features.flatten(2).transpose(1, 2)  # [B, HW, C]
@@ -414,13 +414,9 @@ class UNext(nn.Module):
         out = F.relu(F.interpolate(self.dbn1(self.decoder1(out)),scale_factor=(2,2),mode ='bilinear'))
         if t4.shape[2:] != out.shape[2:]:
            t4 = F.interpolate(t4, size=out.shape[2:], mode='bilinear', align_corners=True)
-
-        
         # out = torch.add(out,t4)
-    
         out = self.sim4(t4, global_semantics_4)
         
-
         _,_,H,W = out.shape
         out = out.flatten(2).transpose(1,2)
         for i, blk in enumerate(self.dblock1):
@@ -433,13 +429,12 @@ class UNext(nn.Module):
         out = F.relu(F.interpolate(self.dbn2(self.decoder2(out)),scale_factor=(2,2),mode ='bilinear'))
         if t3.shape[2:] != out.shape[2:]:
            t3 = F.interpolate(t3, size=out.shape[2:], mode='bilinear', align_corners=True)
-
-          
         # out = torch.add(out,t3)
         out = self.sim3(t3, global_semantics_3)
 
         _,_,H,W = out.shape
         out = out.flatten(2).transpose(1,2)
+        
         
         for i, blk in enumerate(self.dblock2):
             out = blk(out, H, W)
