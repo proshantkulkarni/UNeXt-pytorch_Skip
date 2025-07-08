@@ -23,6 +23,22 @@ import pdb
 
 
 # from topformer import InjectionMultiSumCBR
+def get_shape(tensor):
+    shape = tensor.shape
+    if torch.onnx.is_in_onnx_export():
+        shape = [i.cpu().numpy() for i in shape]
+    return shape
+
+class PyramidPoolAgg(nn.Module):
+    def __init__(self, stride):
+        super().__init__()
+        self.stride = stride
+
+    def forward(self, inputs):
+        B, C, H, W = get_shape(inputs[-1])
+        H = (H - 1) // self.stride + 1
+        W = (W - 1) // self.stride + 1
+        return torch.cat([nn.functional.adaptive_avg_pool2d(inp, (H, W)) for inp in inputs], dim=1)
 
 class h_sigmoid(nn.Module):
     def __init__(self, inplace=True):
@@ -264,6 +280,9 @@ class UNext(nn.Module):
         self.encoder2 = nn.Conv2d(16, 32, 3, stride=1, padding=1)  
         self.encoder3 = nn.Conv2d(32, 128, 3, stride=1, padding=1)
 
+        self.ppa = PyramidPoolAgg(stride=2)
+        self.global_proj = nn.Conv2d(336, 336, kernel_size=1)
+
         self.ebn1 = nn.BatchNorm2d(16)
         self.ebn2 = nn.BatchNorm2d(32)
         self.ebn3 = nn.BatchNorm2d(128)
@@ -285,6 +304,21 @@ class UNext(nn.Module):
             dim=embed_dims[2], num_heads=num_heads[0], mlp_ratio=1, qkv_bias=qkv_bias, qk_scale=qk_scale,
             drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[1], norm_layer=norm_layer,
             sr_ratio=sr_ratios[0])])
+
+        self.global_semantics_block = nn.ModuleList([
+            shiftedBlock(
+                dim=336,  # or appropriate dim after projecting PPA output
+                num_heads=num_heads[0],
+                mlp_ratio=1,
+                qkv_bias=qkv_bias,
+                qk_scale=qk_scale,
+                drop=drop_rate,
+                attn_drop=attn_drop_rate,
+                drop_path=dpr[1],
+                norm_layer=norm_layer,
+                sr_ratio=sr_ratios[0]
+            )
+        ])
 
         self.dblock1 = nn.ModuleList([shiftedBlock(
             dim=embed_dims[1], num_heads=num_heads[0], mlp_ratio=1, qkv_bias=qkv_bias, qk_scale=qk_scale,
@@ -312,11 +346,6 @@ class UNext(nn.Module):
         self.sim3 = InjectionMultiSumCBR(inp=128, oup=128)  # for t3 skip
         self.sim2 = InjectionMultiSumCBR(inp=32, oup=32)    # for t2 skip
         self.sim1 = InjectionMultiSumCBR(inp=16, oup=16)    # for t1 skip
-
-        self.global_proj4 = nn.Conv2d(256, 160, kernel_size=1)
-        self.global_proj3 = nn.Conv2d(256, 128, kernel_size=1)
-        self.global_proj2 = nn.Conv2d(256, 32, kernel_size=1)
-        self.global_proj1 = nn.Conv2d(256, 16, kernel_size=1)
 
         self.dbn1 = nn.BatchNorm2d(160)
         self.dbn2 = nn.BatchNorm2d(128)
@@ -357,13 +386,28 @@ class UNext(nn.Module):
 
         ### Bottleneck
 
-        out ,H,W= self.patch_embed4(out)
-        for i, blk in enumerate(self.block2):
+        out, H, W = self.patch_embed4(out)
+        for blk in self.block2:
             out = blk(out, H, W)
         out = self.norm4(out)
         out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
 
-        global_semantics = out  # bottleneck output
+
+        encoder_outputs = [t1, t2, t3, t4]
+        global_features = self.ppa(encoder_outputs)  # [B, sum of channels, H, W]
+
+        global_features = self.global_proj(global_features)  # optional
+
+        B, C, H, W = global_features.shape
+        global_flat = global_features.flatten(2).transpose(1, 2)  # [B, HW, C]
+
+        for blk in self.global_semantics_block:
+            global_flat = blk(global_flat, H, W)
+
+        global_semantics = global_flat.transpose(1, 2).view(B, C, H, W).contiguous()
+
+        channels = [16, 32, 128, 160]  
+        global_semantics_1, global_semantics_2, global_semantics_3, global_semantics_4 = torch.split(global_semantics, channels, dim=1)
 
         ### Stage 4
 
@@ -373,7 +417,7 @@ class UNext(nn.Module):
 
         
         # out = torch.add(out,t4)
-        global_semantics_4 = self.global_proj4(global_semantics)
+    
         out = self.sim4(t4, global_semantics_4)
         
 
@@ -392,7 +436,6 @@ class UNext(nn.Module):
 
           
         # out = torch.add(out,t3)
-        global_semantics_3 = self.global_proj3(global_semantics)
         out = self.sim3(t3, global_semantics_3)
 
         _,_,H,W = out.shape
@@ -409,7 +452,6 @@ class UNext(nn.Module):
            t2 = F.interpolate(t2, size=out.shape[2:], mode='bilinear', align_corners=True)
 
         # out = torch.add(out,t2)
-        global_semantics_2 = self.global_proj2(global_semantics)
         out = self.sim2(t2, global_semantics_2)
 
         out = F.relu(F.interpolate(self.dbn4(self.decoder4(out)),scale_factor=(2,2),mode ='bilinear'))
@@ -418,7 +460,6 @@ class UNext(nn.Module):
 
 
         # out = torch.add(out,t1)
-        global_semantics_1 = self.global_proj1(global_semantics)
         out = self.sim1(t1, global_semantics_1)
 
         out = F.relu(F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear'))
