@@ -35,11 +35,11 @@ from utils import AverageMeter, str2bool
 # import archs_topformer
 # ARCH_NAMES = archs_topformer.__all__
 
-# import archs_topformer_refine
-# ARCH_NAMES = archs_topformer_refine.__all__
+import archs_topformer_refine
+ARCH_NAMES = archs_topformer_refine.__all__
 
-import archs_topformer_global
-ARCH_NAMES = archs_topformer_global.__all__
+# import archs_topformer_global
+# ARCH_NAMES = archs_topformer_global.__all__
 
 # import archs_DCA
 # ARCH_NAMES = archs_DCA.__all__
@@ -344,17 +344,17 @@ def main():
     #     config['deep_supervision']
     # ).to(device)
 
-    # model = archs_topformer_refine.__dict__[config['arch']](
-    #     config['num_classes'],
-    #     config['input_channels'],
-    #     config['deep_supervision']
-    # ).to(device)
-
-    model = archs_topformer_global.__dict__[config['arch']](
+    model = archs_topformer_refine.__dict__[config['arch']](
         config['num_classes'],
         config['input_channels'],
         config['deep_supervision']
     ).to(device)
+
+    # model = archs_topformer_global.__dict__[config['arch']](
+    #     config['num_classes'],
+    #     config['input_channels'],
+    #     config['deep_supervision']
+    # ).to(device)
 
     # === Create optimizer and scheduler ===
     params = filter(lambda p: p.requires_grad, model.parameters())
