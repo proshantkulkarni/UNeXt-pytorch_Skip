@@ -10,7 +10,7 @@ from albumentations.core.composition import Compose
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
-# import archs
+import archs
 # import archs_CTrans
 # import archs
 # import archs_DCA
@@ -20,7 +20,7 @@ from tqdm import tqdm
 # import archs_DCA_wavelet
 
 # import archs_topformer  
-import archs_topformer_refine  
+# import archs_topformer_refine  
 # import archs_topformer_global
 
 from dataset import Dataset
@@ -97,11 +97,11 @@ def main():
     print(f"=> creating model {config['arch']}")
 
 
-    # model = archs.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+    model = archs.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
     # model = archs_topformer.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
-    model = archs_topformer_refine.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+    # model = archs_topformer_refine.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
     # model = archs_topformer_global.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
