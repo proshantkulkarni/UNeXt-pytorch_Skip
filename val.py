@@ -10,7 +10,8 @@ from albumentations.core.composition import Compose
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
-import archs
+# import archs
+import archs_MLFC
 # import archs_CTrans
 # import archs
 # import archs_DCA
@@ -97,7 +98,9 @@ def main():
     print(f"=> creating model {config['arch']}")
 
 
-    model = archs.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+    # model = archs.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+
+    model = archs_MLFC.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
     # model = archs_topformer.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 

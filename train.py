@@ -29,8 +29,11 @@ from utils import AverageMeter, str2bool
 # import archs_CTrans
 # ARCH_NAMES = archs_CTrans.__all__
 
-import archs
-ARCH_NAMES = archs.__all__
+# import archs
+# ARCH_NAMES = archs.__all__
+
+import archs_MLFC
+ARCH_NAMES = archs_MLFC.__all__
 
 # import archs_topformer
 # ARCH_NAMES = archs_topformer.__all__
@@ -332,7 +335,13 @@ def main():
     #     config['deep_supervision']
     # ).to(device)
 
-    model = archs.__dict__[config['arch']](
+    # model = archs.__dict__[config['arch']](
+    #     config['num_classes'],
+    #     config['input_channels'],
+    #     config['deep_supervision']
+    # ).to(device)
+
+    model = archs_MLFC.__dict__[config['arch']](
         config['num_classes'],
         config['input_channels'],
         config['deep_supervision']
