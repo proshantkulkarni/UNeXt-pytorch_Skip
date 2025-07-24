@@ -13,6 +13,9 @@ import matplotlib.pyplot as plt
 from utils import *
 __all__ = ['UNext']
 
+from inceptionnext import MetaNeXtStage, InceptionDWConv2d
+from functools import partial  # already imported
+
 import timm
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 import types
@@ -21,7 +24,6 @@ from abc import ABCMeta, abstractmethod
 # from mmcv.cnn import ConvModule
 import pdb
 
-from ACC_UNet import MLFC  # adjust path if needed
 
 
 def conv1x1(in_planes: int, out_planes: int, stride: int = 1) -> nn.Conv2d:
@@ -213,17 +215,38 @@ class UNext(nn.Module):
                  depths=[1, 1, 1], sr_ratios=[8, 4, 2, 1], **kwargs):
         super().__init__()
         
-        print("UNext MLFC Initiated")
-        self.encoder1 = nn.Conv2d(3, 16, 3, stride=1, padding=1)  
-        self.encoder2 = nn.Conv2d(16, 32, 3, stride=1, padding=1)  
-        self.encoder3 = nn.Conv2d(32, 128, 3, stride=1, padding=1)
+        print("UNext InceptionNext Initiated")
+        # self.encoder1 = nn.Conv2d(3, 16, 3, stride=1, padding=1)  
+        # self.encoder2 = nn.Conv2d(16, 32, 3, stride=1, padding=1)  
+        # self.encoder3 = nn.Conv2d(32, 128, 3, stride=1, padding=1)
+
+        self.stem = nn.Sequential(
+            nn.Conv2d(input_channels, 40, kernel_size=4, stride=4),  # 256→64
+            nn.BatchNorm2d(40)
+        )
+
+        self.stage1 = MetaNeXtStage(
+            in_chs=40, out_chs=80, ds_stride=2, depth=2,
+            token_mixer=partial(InceptionDWConv2d, band_kernel_size=7, branch_ratio=0.25),
+            norm_layer=nn.BatchNorm2d
+        )
+
+        self.stage2 = MetaNeXtStage(
+            in_chs=80, out_chs=128, ds_stride=2, depth=2,
+            token_mixer=partial(InceptionDWConv2d, band_kernel_size=9, branch_ratio=0.25),
+            norm_layer=nn.BatchNorm2d
+        )
+
+        self.stage3 = MetaNeXtStage(
+            in_chs=128, out_chs=160, ds_stride=2, depth=2,
+            token_mixer=partial(InceptionDWConv2d, band_kernel_size=11, branch_ratio=0.25),
+            norm_layer=nn.BatchNorm2d
+        )
 
         self.ebn1 = nn.BatchNorm2d(16)
         self.ebn2 = nn.BatchNorm2d(32)
         self.ebn3 = nn.BatchNorm2d(128)
         
-        self.mlfc = MLFC(16, 32, 128, 160, lenn=1)
-
         self.norm3 = norm_layer(embed_dims[1])
         self.norm4 = norm_layer(embed_dims[2])
 
@@ -252,10 +275,17 @@ class UNext(nn.Module):
             drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[1], norm_layer=norm_layer,
             sr_ratio=sr_ratios[0])])
 
-        self.patch_embed3 = OverlapPatchEmbed(img_size=img_size // 4, patch_size=3, stride=2, in_chans=embed_dims[0],
-                                              embed_dim=embed_dims[1])
+        # self.patch_embed3 = OverlapPatchEmbed(img_size=img_size // 4, patch_size=3, stride=2, in_chans=embed_dims[0],
+        #                                       embed_dim=embed_dims[1])
+        self.patch_embed3 = OverlapPatchEmbed(img_size=img_size // 4, patch_size=3, stride=2, in_chans=160, embed_dim=embed_dims[1])
+
         self.patch_embed4 = OverlapPatchEmbed(img_size=img_size // 8, patch_size=3, stride=2, in_chans=embed_dims[1],
                                               embed_dim=embed_dims[2])
+
+
+        self.skip_t3_proj = nn.Conv2d(160, 128, kernel_size=1)
+        self.skip_t2_proj = nn.Conv2d(128, 32, kernel_size=1)
+        self.skip_t1_proj = nn.Conv2d(80, 16, kernel_size=1)
 
         self.decoder1 = nn.Conv2d(256, 160, 3, stride=1,padding=1)  
         self.decoder2 =   nn.Conv2d(160, 128, 3, stride=1, padding=1)  
@@ -279,13 +309,25 @@ class UNext(nn.Module):
         ### Conv Stage
 
         ### Stage 1
-        out = F.relu(F.max_pool2d(self.ebn1(self.encoder1(x)),2,2))
+        # out = F.relu(F.max_pool2d(self.ebn1(self.encoder1(x)),2,2))
+        # t1 = out
+        # ### Stage 2
+        # out = F.relu(F.max_pool2d(self.ebn2(self.encoder2(out)),2,2))
+        # t2 = out
+        # ### Stage 3
+        # out = F.relu(F.max_pool2d(self.ebn3(self.encoder3(out)),2,2))
+        # t3 = out
+
+
+        out = self.stem(x)        # [B, 40, 64, 64]
+        ### Stage 1
+        out = self.stage1(out)    # [B, 80, 32, 32]
         t1 = out
         ### Stage 2
-        out = F.relu(F.max_pool2d(self.ebn2(self.encoder2(out)),2,2))
+        out = self.stage2(out)    # [B, 128, 16, 16]
         t2 = out
         ### Stage 3
-        out = F.relu(F.max_pool2d(self.ebn3(self.encoder3(out)),2,2))
+        out = self.stage3(out)    # [B, 160, 8, 8]
         t3 = out
 
         ### Tokenized MLP Stage
@@ -299,10 +341,6 @@ class UNext(nn.Module):
         t4 = out
 
         ### Bottleneck
-
-        # MLFC BLock 
-        t1, t2, t3, t4 = self.mlfc(t1, t2, t3, t4)
-
 
         out ,H,W= self.patch_embed4(out)
         for i, blk in enumerate(self.block2):
@@ -330,6 +368,9 @@ class UNext(nn.Module):
         out = F.relu(F.interpolate(self.dbn2(self.decoder2(out)),scale_factor=(2,2),mode ='bilinear'))
         if t3.shape[2:] != out.shape[2:]:
            t3 = F.interpolate(t3, size=out.shape[2:], mode='bilinear', align_corners=True)
+
+        
+        t3 = self.skip_t3_proj(t3)
         out = torch.add(out,t3)
         _,_,H,W = out.shape
         out = out.flatten(2).transpose(1,2)
@@ -344,150 +385,151 @@ class UNext(nn.Module):
         if t2.shape[2:] != out.shape[2:]:
            t2 = F.interpolate(t2, size=out.shape[2:], mode='bilinear', align_corners=True)
 
-
+        t2 = self.skip_t2_proj(t2)
         out = torch.add(out,t2)
         out = F.relu(F.interpolate(self.dbn4(self.decoder4(out)),scale_factor=(2,2),mode ='bilinear'))
         if t1.shape[2:] != out.shape[2:]:
           t1 = F.interpolate(t1, size=out.shape[2:], mode='bilinear', align_corners=True)
 
-
+        t1 = self.skip_t1_proj(t1)
         out = torch.add(out,t1)
         out = F.relu(F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear'))
 
         return self.final(out)
 
-class UNext_S(nn.Module):
+# class UNext_S(nn.Module):
 
-    ## Conv 3 + MLP 2 + shifted MLP w less parameters
+#     ## Conv 3 + MLP 2 + shifted MLP w less parameters
     
-    def __init__(self,  num_classes, input_channels=3, deep_supervision=False,img_size=224, patch_size=16, in_chans=3,  embed_dims=[32, 64, 128, 512],
-                 num_heads=[1, 2, 4, 8], mlp_ratios=[4, 4, 4, 4], qkv_bias=False, qk_scale=None, drop_rate=0.,
-                 attn_drop_rate=0., drop_path_rate=0., norm_layer=nn.LayerNorm,
-                 depths=[1, 1, 1], sr_ratios=[8, 4, 2, 1], **kwargs):
-        super().__init__()
+#     def __init__(self,  num_classes, input_channels=3, deep_supervision=False,img_size=224, patch_size=16, in_chans=3,  embed_dims=[32, 64, 128, 512],
+#                  num_heads=[1, 2, 4, 8], mlp_ratios=[4, 4, 4, 4], qkv_bias=False, qk_scale=None, drop_rate=0.,
+#                  attn_drop_rate=0., drop_path_rate=0., norm_layer=nn.LayerNorm,
+#                  depths=[1, 1, 1], sr_ratios=[8, 4, 2, 1], **kwargs):
+#         super().__init__()
         
-        self.encoder1 = nn.Conv2d(3, 8, 3, stride=1, padding=1)  
-        self.encoder2 = nn.Conv2d(8, 16, 3, stride=1, padding=1)  
-        self.encoder3 = nn.Conv2d(16, 32, 3, stride=1, padding=1)
+#         self.encoder1 = nn.Conv2d(3, 8, 3, stride=1, padding=1)  
+#         self.encoder2 = nn.Conv2d(8, 16, 3, stride=1, padding=1)  
+#         self.encoder3 = nn.Conv2d(16, 32, 3, stride=1, padding=1)
 
-        self.ebn1 = nn.BatchNorm2d(8)
-        self.ebn2 = nn.BatchNorm2d(16)
-        self.ebn3 = nn.BatchNorm2d(32)
+#         self.ebn1 = nn.BatchNorm2d(8)
+#         self.ebn2 = nn.BatchNorm2d(16)
+#         self.ebn3 = nn.BatchNorm2d(32)
         
-        self.norm3 = norm_layer(embed_dims[1])
-        self.norm4 = norm_layer(embed_dims[2])
+#         self.norm3 = norm_layer(embed_dims[1])
+#         self.norm4 = norm_layer(embed_dims[2])
 
-        self.dnorm3 = norm_layer(64)
-        self.dnorm4 = norm_layer(32)
+#         self.dnorm3 = norm_layer(64)
+#         self.dnorm4 = norm_layer(32)
 
-        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]
+#         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]
 
-        self.block1 = nn.ModuleList([shiftedBlock(
-            dim=embed_dims[1], num_heads=num_heads[0], mlp_ratio=1, qkv_bias=qkv_bias, qk_scale=qk_scale,
-            drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[0], norm_layer=norm_layer,
-            sr_ratio=sr_ratios[0])])
+#         self.block1 = nn.ModuleList([shiftedBlock(
+#             dim=embed_dims[1], num_heads=num_heads[0], mlp_ratio=1, qkv_bias=qkv_bias, qk_scale=qk_scale,
+#             drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[0], norm_layer=norm_layer,
+#             sr_ratio=sr_ratios[0])])
 
-        self.block2 = nn.ModuleList([shiftedBlock(
-            dim=embed_dims[2], num_heads=num_heads[0], mlp_ratio=1, qkv_bias=qkv_bias, qk_scale=qk_scale,
-            drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[1], norm_layer=norm_layer,
-            sr_ratio=sr_ratios[0])])
+#         self.block2 = nn.ModuleList([shiftedBlock(
+#             dim=embed_dims[2], num_heads=num_heads[0], mlp_ratio=1, qkv_bias=qkv_bias, qk_scale=qk_scale,
+#             drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[1], norm_layer=norm_layer,
+#             sr_ratio=sr_ratios[0])])
 
-        self.dblock1 = nn.ModuleList([shiftedBlock(
-            dim=embed_dims[1], num_heads=num_heads[0], mlp_ratio=1, qkv_bias=qkv_bias, qk_scale=qk_scale,
-            drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[0], norm_layer=norm_layer,
-            sr_ratio=sr_ratios[0])])
+#         self.dblock1 = nn.ModuleList([shiftedBlock(
+#             dim=embed_dims[1], num_heads=num_heads[0], mlp_ratio=1, qkv_bias=qkv_bias, qk_scale=qk_scale,
+#             drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[0], norm_layer=norm_layer,
+#             sr_ratio=sr_ratios[0])])
 
-        self.dblock2 = nn.ModuleList([shiftedBlock(
-            dim=embed_dims[0], num_heads=num_heads[0], mlp_ratio=1, qkv_bias=qkv_bias, qk_scale=qk_scale,
-            drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[1], norm_layer=norm_layer,
-            sr_ratio=sr_ratios[0])])
+#         self.dblock2 = nn.ModuleList([shiftedBlock(
+#             dim=embed_dims[0], num_heads=num_heads[0], mlp_ratio=1, qkv_bias=qkv_bias, qk_scale=qk_scale,
+#             drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[1], norm_layer=norm_layer,
+#             sr_ratio=sr_ratios[0])])
 
-        self.patch_embed3 = OverlapPatchEmbed(img_size=img_size // 4, patch_size=3, stride=2, in_chans=embed_dims[0],
-                                              embed_dim=embed_dims[1])
-        self.patch_embed4 = OverlapPatchEmbed(img_size=img_size // 8, patch_size=3, stride=2, in_chans=embed_dims[1],
-                                              embed_dim=embed_dims[2])
+#         self.patch_embed3 = OverlapPatchEmbed(img_size=img_size // 4, patch_size=3, stride=2, in_chans=embed_dims[0],
+#                                               embed_dim=embed_dims[1])
+#         self.patch_embed4 = OverlapPatchEmbed(img_size=img_size // 8, patch_size=3, stride=2, in_chans=embed_dims[1],
+#                                               embed_dim=embed_dims[2])
 
-        self.decoder1 = nn.Conv2d(128, 64, 3, stride=1,padding=1)  
-        self.decoder2 =   nn.Conv2d(64, 32, 3, stride=1, padding=1)  
-        self.decoder3 =   nn.Conv2d(32, 16, 3, stride=1, padding=1) 
-        self.decoder4 =   nn.Conv2d(16, 8, 3, stride=1, padding=1)
-        self.decoder5 =   nn.Conv2d(8, 8, 3, stride=1, padding=1)
+#         self.decoder1 = nn.Conv2d(128, 64, 3, stride=1,padding=1)  
+#         self.decoder2 =   nn.Conv2d(64, 32, 3, stride=1, padding=1)  
+#         self.decoder3 =   nn.Conv2d(32, 16, 3, stride=1, padding=1) 
+#         self.decoder4 =   nn.Conv2d(16, 8, 3, stride=1, padding=1)
+#         self.decoder5 =   nn.Conv2d(8, 8, 3, stride=1, padding=1)
 
-        self.dbn1 = nn.BatchNorm2d(64)
-        self.dbn2 = nn.BatchNorm2d(32)
-        self.dbn3 = nn.BatchNorm2d(16)
-        self.dbn4 = nn.BatchNorm2d(8)
+#         self.dbn1 = nn.BatchNorm2d(64)
+#         self.dbn2 = nn.BatchNorm2d(32)
+#         self.dbn3 = nn.BatchNorm2d(16)
+#         self.dbn4 = nn.BatchNorm2d(8)
         
-        self.final = nn.Conv2d(8, num_classes, kernel_size=1)
+#         self.final = nn.Conv2d(8, num_classes, kernel_size=1)
 
-        self.soft = nn.Softmax(dim =1)
+#         self.soft = nn.Softmax(dim =1)
 
-    def forward(self, x):
+#     def forward(self, x):
         
-        B = x.shape[0]
-        ### Encoder
-        ### Conv Stage
+#         B = x.shape[0]
+#         ### Encoder
+#         ### Conv Stage
 
-        ### Stage 1
-        out = F.relu(F.max_pool2d(self.ebn1(self.encoder1(x)),2,2))
-        t1 = out
-        ### Stage 2
-        out = F.relu(F.max_pool2d(self.ebn2(self.encoder2(out)),2,2))
-        t2 = out
-        ### Stage 3
-        out = F.relu(F.max_pool2d(self.ebn3(self.encoder3(out)),2,2))
-        t3 = out
+#         ### Stage 1
+#         out = F.relu(F.max_pool2d(self.ebn1(self.encoder1(x)),2,2))
+#         t1 = out
+#         ### Stage 2
+#         out = F.relu(F.max_pool2d(self.ebn2(self.encoder2(out)),2,2))
+#         t2 = out
+#         ### Stage 3
+#         out = F.relu(F.max_pool2d(self.ebn3(self.encoder3(out)),2,2))
+#         t3 = out
 
-        ### Tokenized MLP Stage
-        ### Stage 4
+#         ### Tokenized MLP Stage
+#         ### Stage 4
 
-        out,H,W = self.patch_embed3(out)
-        for i, blk in enumerate(self.block1):
-            out = blk(out, H, W)
-        out = self.norm3(out)
-        out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-        t4 = out
+#         out,H,W = self.patch_embed3(out)
+#         for i, blk in enumerate(self.block1):
+#             out = blk(out, H, W)
+#         out = self.norm3(out)
+#         out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+#         t4 = out
 
-        ### Bottleneck
+#         ### Bottleneck
 
-        out ,H,W= self.patch_embed4(out)
-        for i, blk in enumerate(self.block2):
-            out = blk(out, H, W)
-        out = self.norm4(out)
-        out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+#         out ,H,W= self.patch_embed4(out)
+#         for i, blk in enumerate(self.block2):
+#             out = blk(out, H, W)
+#         out = self.norm4(out)
+#         out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
 
-        ### Stage 4
+#         ### Stage 4
 
-        out = F.relu(F.interpolate(self.dbn1(self.decoder1(out)),scale_factor=(2,2),mode ='bilinear'))
+#         out = F.relu(F.interpolate(self.dbn1(self.decoder1(out)),scale_factor=(2,2),mode ='bilinear'))
         
-        out = torch.add(out,t4)                     # FIRST SKIP
-        _,_,H,W = out.shape
-        out = out.flatten(2).transpose(1,2)
-        for i, blk in enumerate(self.dblock1):
-            out = blk(out, H, W)
+#         out = torch.add(out,t4)                     # FIRST SKIP
+#         _,_,H,W = out.shape
+#         out = out.flatten(2).transpose(1,2)
+#         for i, blk in enumerate(self.dblock1):
+#             out = blk(out, H, W)
 
-        ### Stage 3
+#         ### Stage 3
         
-        out = self.dnorm3(out)
-        out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-        out = F.relu(F.interpolate(self.dbn2(self.decoder2(out)),scale_factor=(2,2),mode ='bilinear'))
-        out = torch.add(out,t3)                 # SECOND SKIP
-        _,_,H,W = out.shape
-        out = out.flatten(2).transpose(1,2)
+#         out = self.dnorm3(out)
+#         out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+#         out = F.relu(F.interpolate(self.dbn2(self.decoder2(out)),scale_factor=(2,2),mode ='bilinear'))
+#         out = torch.add(out,t3)                 # SECOND SKIP
+#         _,_,H,W = out.shape
+#         out = out.flatten(2).transpose(1,2)
         
-        for i, blk in enumerate(self.dblock2):
-            out = blk(out, H, W)
+#         for i, blk in enumerate(self.dblock2):
+#             out = blk(out, H, W)
 
-        out = self.dnorm4(out)
-        out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+#         out = self.dnorm4(out)
+#         out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
 
-        out = F.relu(F.interpolate(self.dbn3(self.decoder3(out)),scale_factor=(2,2),mode ='bilinear'))
-        out = torch.add(out,t2)                     # THIRD SKIP
-        out = F.relu(F.interpolate(self.dbn4(self.decoder4(out)),scale_factor=(2,2),mode ='bilinear'))
-        out = torch.add(out,t1)                     # FOURTH SKIP
-        out = F.relu(F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear'))
+#         out = F.relu(F.interpolate(self.dbn3(self.decoder3(out)),scale_factor=(2,2),mode ='bilinear'))
+#         out = torch.add(out,t2)                     # THIRD SKIP
+#         out = F.relu(F.interpolate(self.dbn4(self.decoder4(out)),scale_factor=(2,2),mode ='bilinear'))
+#         out = torch.add(out,t1)                     # FOURTH SKIP
+#         out = F.relu(F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear'))
 
-        return self.final(out)
+#         return self.final(out)
+
 
 if __name__ == '__main__':
     # Sanity check
@@ -503,6 +545,7 @@ if __name__ == '__main__':
         output = model(dummy_input)
 
     print(f"✅ Forward pass successful! Output shape: {output.shape}")
+
 
 
 #EOF
