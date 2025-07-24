@@ -395,7 +395,11 @@ class UNext(nn.Module):
         out = torch.add(out,t1)
         out = F.relu(F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear'))
 
-        return self.final(out)
+        # return self.final(out)
+        out = self.final(out)
+        out = F.interpolate(out, size=(x.size(2), x.size(3)), mode='bilinear', align_corners=False)
+        return out
+
 
 # class UNext_S(nn.Module):
 
