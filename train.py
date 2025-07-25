@@ -405,12 +405,23 @@ def main():
             scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
         start_epoch = checkpoint['epoch'] + 1
         trigger = checkpoint['trigger']
+        
+        if 'best_val_loss' in checkpoint:
+            best_val_loss = checkpoint['best_val_loss']
+            print(f"✅ Resumed using best_val_loss = {best_val_loss:.4f}")
+        else:
+            # Convert from best_iou to val_loss baseline
+            best_val_loss = float('inf')
+            print(f"⚠️ Old checkpoint does not have best_val_loss. Starting fresh with best_val_loss = ∞")
+
+
         best_iou = checkpoint['best_iou']
         log = checkpoint['log']
         print(f"✅ Resumed from epoch {start_epoch}, best IOU so far: {best_iou:.4f}")
     else:
         trigger = 0
         best_iou = 0
+        best_val_loss = float('inf')
         log = OrderedDict([
             ('epoch', []), ('lr', []), ('loss', []), ('iou', []),
             ('val_loss', []), ('val_iou', []), ('val_dice', []),
@@ -534,24 +545,37 @@ def main():
         print(f"   Train Loss: {train_log['loss']:.4f}, IOU: {train_log['iou']:.4f}")
         print(f"   Val   Loss: {val_log['loss']:.4f}, IOU: {val_log['iou']:.4f}, Dice: {val_log['dice']:.4f}")
 
-        if val_log['iou'] > best_iou:
+        # if val_log['iou'] > best_iou:
+        if val_log['loss'] < best_val_loss:
             # torch.save(model.state_dict(), '/content/drive/MyDrive/Amit-Paper3/ISIC_3/%s/model.pth' %
             #            config['name'])
             model_path = os.path.join(save_dir, "model.pth")
             # torch.save(model.state_dict(), os.path.join(save_dir, "model.pth"))
+            # checkpoint = {
+            #                 'model_state_dict': model.state_dict(),
+            #                 'optimizer_state_dict': optimizer.state_dict(),
+            #                 'scheduler_state_dict': scheduler.state_dict() if scheduler else None,
+            #                 'epoch': epoch,
+            #                 'trigger': trigger,
+            #                 'best_iou': best_iou,
+            #                 'log': log
+            #             }
             checkpoint = {
                             'model_state_dict': model.state_dict(),
                             'optimizer_state_dict': optimizer.state_dict(),
                             'scheduler_state_dict': scheduler.state_dict() if scheduler else None,
                             'epoch': epoch,
                             'trigger': trigger,
+                            'best_val_loss': best_val_loss, 
                             'best_iou': best_iou,
                             'log': log
                         }
             torch.save(checkpoint, os.path.join(save_dir, 'checkpoint.pth'))
             torch.save(model.state_dict(), os.path.join(save_dir, 'model.pth'))
             best_iou = val_log['iou']
+            best_val_loss = val_log['loss']
             print("=> saved best model")
+            print(f"   Best Val Loss so far: {best_val_loss:.4f}")
             print(f" New best model saved at: {model_path}")
             trigger = 0
 
