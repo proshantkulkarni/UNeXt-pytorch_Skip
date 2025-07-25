@@ -417,7 +417,7 @@ def main():
 
         best_iou = checkpoint['best_iou']
         log = checkpoint['log']
-        print(f"✅ Resumed from epoch {start_epoch}, best IOU so far: {best_iou:.4f}")
+        print(f"✅ Resumed from epoch {start_epoch}, best Val loss so far: {best_val_loss:.4f}")
     else:
         trigger = 0
         best_iou = 0
