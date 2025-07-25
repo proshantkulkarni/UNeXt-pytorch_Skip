@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 import cv2
+from matplotlib.patches import Patch
 
 # ----------------------------- CONFIG -----------------------------
 EXTENSIONS = ('.png', '.jpg', '.jpeg', '.bmp', '.tif', '.tiff')
@@ -80,12 +81,20 @@ def draw_contours_on(image_rgb, mask_bin, color_bgr, thickness=2):
     cv2.drawContours(img_bgr, contours, -1, color_bgr, thickness)
     return cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
 
-def boundary_overlay(image_rgb, gt, base, mlfc):
+# def boundary_overlay(image_rgb, gt, base, mlfc):
+#     out = image_rgb.copy()
+#     out = draw_contours_on(out, gt, COLOR_GT, thickness=2)
+#     out = draw_contours_on(out, base, COLOR_BASE, thickness=2)
+#     out = draw_contours_on(out, mlfc, COLOR_MLFC, thickness=2)
+#     return out
+
+def boundary_overlay(image_rgb, gt, base, mlfc, thickness=4):
     out = image_rgb.copy()
-    out = draw_contours_on(out, gt, COLOR_GT, thickness=2)
-    out = draw_contours_on(out, base, COLOR_BASE, thickness=2)
-    out = draw_contours_on(out, mlfc, COLOR_MLFC, thickness=2)
+    out = draw_contours_on(out, gt, COLOR_GT, thickness=thickness)
+    out = draw_contours_on(out, base, COLOR_BASE, thickness=thickness)
+    out = draw_contours_on(out, mlfc, COLOR_MLFC, thickness=thickness)
     return out
+
 
 def diff_baseline_vs_gt(base, gt):
     """
@@ -115,8 +124,8 @@ def diff_baseline_vs_mlfc(base, mlfc):
     diff[mlfc_only] = COLOR_MLFC_ONLY[::-1]
     return diff
 
-def save_panel(image_rgb, gt, boundary_img, base_vs_gt, base_vs_mlfc, save_path, title=None):
-    fig, axes = plt.subplots(1, 5, figsize=(22, 5))
+def save_panel(image_rgb, gt, boundary_img, base_vs_gt, base_vs_mlfc, save_path):
+    fig, axes = plt.subplots(1, 5, figsize=(24, 5))
     panels = [
         (image_rgb, 'Image'),
         (gt * 255, 'GT'),
@@ -126,14 +135,22 @@ def save_panel(image_rgb, gt, boundary_img, base_vs_gt, base_vs_mlfc, save_path,
     ]
 
     for ax, (im, t) in zip(axes, panels):
-        if im.ndim == 2:  # grayscale
+        if im.ndim == 2:
             ax.imshow(im, cmap='gray')
         else:
             ax.imshow(im)
-        ax.set_title(t if title is None else t)
+        ax.set_title(t)
         ax.axis('off')
         for spine in ax.spines.values():
             spine.set_edgecolor('black')
+
+    # Add legend to the Boundary Overlay subplot
+    legend_elements = [
+        Patch(facecolor=np.array(COLOR_GT[::-1]) / 255, edgecolor='k', label='GT (Green)'),
+        Patch(facecolor=np.array(COLOR_BASE[::-1]) / 255, edgecolor='k', label='Baseline (Red)'),
+        Patch(facecolor=np.array(COLOR_MLFC[::-1]) / 255, edgecolor='k', label='MLFC (Blue)')
+    ]
+    axes[2].legend(handles=legend_elements, loc='lower center', bbox_to_anchor=(0.5, -0.25), ncol=3)
 
     plt.tight_layout()
     plt.savefig(save_path, bbox_inches='tight', dpi=200)
