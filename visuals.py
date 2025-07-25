@@ -123,9 +123,8 @@ def diff_baseline_vs_mlfc(base, mlfc):
     diff[base_only] = COLOR_BASE_ONLY[::-1]  # BGR->RGB
     diff[mlfc_only] = COLOR_MLFC_ONLY[::-1]
     return diff
-
 def save_panel(image_rgb, gt, boundary_img, base_vs_gt, base_vs_mlfc, save_path):
-    fig, axes = plt.subplots(1, 5, figsize=(24, 5))
+    fig, axes = plt.subplots(1, 5, figsize=(26, 5))
     panels = [
         (image_rgb, 'Image'),
         (gt * 255, 'GT'),
@@ -144,13 +143,27 @@ def save_panel(image_rgb, gt, boundary_img, base_vs_gt, base_vs_mlfc, save_path)
         for spine in ax.spines.values():
             spine.set_edgecolor('black')
 
-    # Add legend to the Boundary Overlay subplot
-    legend_elements = [
-        Patch(facecolor=np.array(COLOR_GT[::-1]) / 255, edgecolor='k', label='GT (Green)'),
-        Patch(facecolor=np.array(COLOR_BASE[::-1]) / 255, edgecolor='k', label='Baseline (Red)'),
-        Patch(facecolor=np.array(COLOR_MLFC[::-1]) / 255, edgecolor='k', label='MLFC (Blue)')
+    # Legends for Boundary Overlay
+    legend_boundary = [
+        Patch(facecolor=np.array(COLOR_GT[::-1]) / 255, label='GT (Green)'),
+        Patch(facecolor=np.array(COLOR_BASE[::-1]) / 255, label='Baseline (Red)'),
+        Patch(facecolor=np.array(COLOR_MLFC[::-1]) / 255, label='MLFC (Blue)')
     ]
-    axes[2].legend(handles=legend_elements, loc='lower center', bbox_to_anchor=(0.5, -0.25), ncol=3)
+    axes[2].legend(handles=legend_boundary, loc='lower center', bbox_to_anchor=(0.5, -0.25), ncol=3)
+
+    # Legends for Baseline - GT
+    legend_bgt = [
+        Patch(facecolor=np.array(COLOR_FP_BASE_VS_GT[::-1]) / 255, label='False Positive (Red)'),
+        Patch(facecolor=np.array(COLOR_FN_BASE_VS_GT[::-1]) / 255, label='False Negative (Green)')
+    ]
+    axes[3].legend(handles=legend_bgt, loc='lower center', bbox_to_anchor=(0.5, -0.25), ncol=2)
+
+    # Legends for Baseline - MLFC
+    legend_bm = [
+        Patch(facecolor=np.array(COLOR_BASE_ONLY[::-1]) / 255, label='Baseline only (Magenta)'),
+        Patch(facecolor=np.array(COLOR_MLFC_ONLY[::-1]) / 255, label='MLFC only (Cyan)')
+    ]
+    axes[4].legend(handles=legend_bm, loc='lower center', bbox_to_anchor=(0.5, -0.25), ncol=2)
 
     plt.tight_layout()
     plt.savefig(save_path, bbox_inches='tight', dpi=200)
