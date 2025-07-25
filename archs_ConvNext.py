@@ -386,7 +386,8 @@ class UNext(nn.Module):
           t1 = F.interpolate(t1, size=out.shape[2:], mode='bilinear', align_corners=True)
         # out = torch.add(out,t1)
         out = torch.add(out, self.t1_proj(t1)) 
-        out = F.relu(F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear'))
+        # out = F.relu(F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear'))
+        out = F.interpolate(out, size=(256, 256), mode='bilinear', align_corners=True) 
 
         return self.final(out)
 
