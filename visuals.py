@@ -21,8 +21,8 @@ COLOR_FN_BASE_VS_GT  = (0, 255, 0)    # Green (GT lesion, baseline missed)
 # ----------------------------- PATHS ------------------------------
 images_dir   = '/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic2/test/images'
 gt_dir       = '/content/drive/MyDrive/Amit-Paper3/UNeXt-pytorch/inputs/isic2/test/masks'
-baseline_dir = '/content/drive/MyDrive/Prashant/UNeXt-pytorch_Skip/models/Baseline_early_50'
-mlfc_dir     = '/content/drive/MyDrive/Prashant/UNeXt-pytorch_Skip/models/MLFC'
+baseline_dir = '/content/drive/MyDrive/Prashant/UNeXt-pytorch_Skip/models/Baseline_early_50/results'
+mlfc_dir     = '/content/drive/MyDrive/Prashant/UNeXt-pytorch_Skip/models/MLFC/results'
 
 output_folder = '/content/drive/MyDrive/Prashant/UNeXt-pytorch_Skip/models/Baseline_vs_MLFC'
 os.makedirs(output_folder, exist_ok=True)
