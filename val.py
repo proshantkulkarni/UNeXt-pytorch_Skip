@@ -13,7 +13,7 @@ from tqdm import tqdm
 # import archs
 # import archs_MLFC
 import archs_InceptionNext
-import archs_ConvNext
+# import archs_ConvNext
 # import archs_CTrans
 # import archs
 # import archs_DCA
