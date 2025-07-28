@@ -14,8 +14,8 @@ import time
 
 # import archs
 # import archs_MLFC
-# import archs_InceptionNext
-import archs_ConvNext
+import archs_InceptionNext
+# import archs_ConvNext
 # import archs_CTrans
 # import archs
 # import archs_DCA
@@ -106,9 +106,9 @@ def main():
 
     # model = archs_MLFC.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
-    # model = archs_InceptionNext.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+    model = archs_InceptionNext.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
-    model = archs_ConvNext.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+    # model = archs_ConvNext.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
     # model = archs_topformer.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
