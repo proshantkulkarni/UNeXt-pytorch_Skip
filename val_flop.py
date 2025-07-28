@@ -217,13 +217,22 @@ def main():
             iou_avg_meter.update(iou, input.size(0))
             dice_avg_meter.update(dice, input.size(0))
 
-            output_tensor = torch.tensor(output).float().cuda()
+            # output_tensor = torch.tensor(output).float().cuda()
+            # target_tensor = target.float()
+
+            # Use original prediction tensor before sigmoid
+            output_bin = (torch.sigmoid(output) > 0.5).float()
             target_tensor = target.float()
 
-            TP = (output_tensor * target_tensor).sum()
-            TN = ((1 - output_tensor) * (1 - target_tensor)).sum()
-            FP = (output_tensor * (1 - target_tensor)).sum()
-            FN = ((1 - output_tensor) * target_tensor).sum()
+            TP = (output_bin * target_tensor).sum()
+            TN = ((1 - output_bin) * (1 - target_tensor)).sum()
+            FP = (output_bin * (1 - target_tensor)).sum()
+            FN = ((1 - output_bin) * target_tensor).sum()
+
+            # TP = (output_tensor * target_tensor).sum()
+            # TN = ((1 - output_tensor) * (1 - target_tensor)).sum()
+            # FP = (output_tensor * (1 - target_tensor)).sum()
+            # FN = ((1 - output_tensor) * target_tensor).sum()
 
             eps = 1e-7
             sensitivity = TP / (TP + FN + eps)
@@ -256,9 +265,9 @@ def main():
                     os.makedirs(dest_dir, exist_ok=True)
                     cv2.imwrite(os.path.join(dest_dir, f"{meta['img_id'][i]}.png"), (output[i, c] * 255).astype('uint8'))
 
-    print(f"Sensitivity: {sensitivity_meter.avg:.4f}")
-    print(f"Specificity: {specificity_meter.avg:.4f}")
-    print(f"Accuracy:    {accuracy_meter.avg:.4f}")
+    print(f"Sensitivity: {sensitivity_meter.avg * 100:.2f}%")
+    print(f"Specificity: {specificity_meter.avg * 100:.2f}%")
+    print(f"Accuracy:    {accuracy_meter.avg * 100:.2f}%")
     print(f"Avg GPU Time/Image: {gput.avg:.4f} sec")
 
     print(f'IoU: {iou_avg_meter.avg:.4f}')
@@ -304,9 +313,9 @@ def main():
         metrics[f'Precision_class_{idx}'] = [float(p)]
         metrics[f'Recall_class_{idx}'] = [float(r)]
 
-    metrics['Sensitivity'] = [float(sensitivity_meter.avg)]
-    metrics['Specificity'] = [float(specificity_meter.avg)]
-    metrics['Accuracy'] = [float(accuracy_meter.avg)]
+    metrics['Sensitivity (%)'] = [float(sensitivity_meter.avg * 100)]
+    metrics['Specificity (%)'] = [float(specificity_meter.avg * 100)]
+    metrics['Accuracy (%)'] = [float(accuracy_meter.avg * 100)]
     metrics['Params (M)'] = [float(model_params)]
     metrics['GFLOPs'] = [float(model_gflops)]
     metrics['Avg GPU Time (s)'] = [float(gput.avg)]
