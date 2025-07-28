@@ -12,9 +12,9 @@ from tqdm import tqdm
 from thop import profile
 import time
 
-# import archs
+import archs
 # import archs_MLFC
-import archs_InceptionNext
+# import archs_InceptionNext
 # import archs_ConvNext
 # import archs_CTrans
 # import archs
@@ -102,12 +102,12 @@ def main():
     print(f"=> creating model {config['arch']}")
 
 
-    # model = archs.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+    model = archs.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
     # model = archs_MLFC.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
-    model = archs_InceptionNext.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
-
+    # model = archs_InceptionNext.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+# 
     # model = archs_ConvNext.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
     # model = archs_topformer.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
