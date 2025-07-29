@@ -38,8 +38,11 @@ from utils import AverageMeter, str2bool
 # import archs_InceptionNext
 # ARCH_NAMES = archs_InceptionNext.__all__
 
-import archs_InceptionNext_atto
-ARCH_NAMES = archs_InceptionNext_atto.__all__
+import archs_InceptionNext_SE
+ARCH_NAMES = archs_InceptionNext_SE.__all__
+
+# import archs_InceptionNext_atto
+# ARCH_NAMES = archs_InceptionNext_atto.__all__
 
 # import archs_ConvNext
 # ARCH_NAMES = archs_ConvNext.__all__
@@ -350,7 +353,13 @@ def main():
     #     config['deep_supervision']
     # ).to(device)
 
-    model = archs_InceptionNext_atto.__dict__[config['arch']](
+    # model = archs_InceptionNext_atto.__dict__[config['arch']](
+    #     config['num_classes'],
+    #     config['input_channels'],
+    #     config['deep_supervision']
+    # ).to(device)
+
+    model = archs_InceptionNext_SE.__dict__[config['arch']](
         config['num_classes'],
         config['input_channels'],
         config['deep_supervision']

@@ -15,6 +15,7 @@ __all__ = ['UNext']
 
 from inceptionnext import MetaNeXtStage, InceptionDWConv2d
 from functools import partial  # already imported
+from squeeze_and_excitation import ChannelSELayer
 
 import timm
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
@@ -287,6 +288,11 @@ class UNext(nn.Module):
         self.skip_t2_proj = nn.Conv2d(128, 32, kernel_size=1)
         self.skip_t1_proj = nn.Conv2d(80, 16, kernel_size=1)
 
+        self.se_t1 = ChannelSELayer(80)
+        self.se_t2 = ChannelSELayer(128)
+        self.se_t3 = ChannelSELayer(160)
+        self.se_t4 = ChannelSELayer(embed_dims[1])  # t4 after MLP block
+
         self.decoder1 = nn.Conv2d(256, 160, 3, stride=1,padding=1)  
         self.decoder2 =   nn.Conv2d(160, 128, 3, stride=1, padding=1)  
         self.decoder3 =   nn.Conv2d(128, 32, 3, stride=1, padding=1) 
@@ -323,12 +329,15 @@ class UNext(nn.Module):
         ### Stage 1
         out = self.stage1(out)    # [B, 80, 32, 32]
         t1 = out
+        t1 = self.se_t1(t1)         # Squeeze and Excitation for t1
         ### Stage 2
         out = self.stage2(out)    # [B, 128, 16, 16]
         t2 = out
+        t2 = self.se_t2(t2)         # Squeeze and Excitation for t2
         ### Stage 3
         out = self.stage3(out)    # [B, 160, 8, 8]
         t3 = out
+        t3 = self.se_t3(t3)         # Squeeze and Excitation for t3
 
         ### Tokenized MLP Stage
         ### Stage 4
@@ -339,7 +348,7 @@ class UNext(nn.Module):
         out = self.norm3(out)
         out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
         t4 = out
-
+        t4 = self.se_t4(t4)         # Squeeze and Excitation for t4
         ### Bottleneck
 
         out ,H,W= self.patch_embed4(out)
