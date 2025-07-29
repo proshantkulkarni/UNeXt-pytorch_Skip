@@ -12,7 +12,7 @@ from tqdm import tqdm
 from thop import profile
 import time
 
-import archs
+# import archs
 # import archs_MLFC
 # import archs_InceptionNext
 # import archs_ConvNext
@@ -23,7 +23,7 @@ import archs
 # import archs_Fusion
 # import archs_wavelet
 # import archs_DCA_wavelet
-
+import archs_InceptionNext_atto
 # import archs_topformer  
 # import archs_topformer_refine  
 # import archs_topformer_global
@@ -102,7 +102,9 @@ def main():
     print(f"=> creating model {config['arch']}")
 
 
-    model = archs.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+    # model = archs.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+
+    model = archs_InceptionNext_atto.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
     # model = archs_MLFC.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
