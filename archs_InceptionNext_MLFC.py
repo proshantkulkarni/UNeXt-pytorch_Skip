@@ -15,8 +15,7 @@ __all__ = ['UNext']
 
 from inceptionnext import MetaNeXtStage, InceptionDWConv2d
 from functools import partial  # already imported
-# from squeeze_and_excitation import ChannelSELayer
-from squeeze_and_excitation import SpatialSELayer
+from ACC_UNet import MLFC  # adjust path if needed
 
 import timm
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
@@ -217,7 +216,7 @@ class UNext(nn.Module):
                  depths=[1, 1, 1], sr_ratios=[8, 4, 2, 1], **kwargs):
         super().__init__()
         
-        print("UNext InceptionNext Spatial SE Initiated")
+        print("UNext InceptionNext MLFC Initiated")
         # self.encoder1 = nn.Conv2d(3, 16, 3, stride=1, padding=1)  
         # self.encoder2 = nn.Conv2d(16, 32, 3, stride=1, padding=1)  
         # self.encoder3 = nn.Conv2d(32, 128, 3, stride=1, padding=1)
@@ -244,6 +243,14 @@ class UNext(nn.Module):
             token_mixer=partial(InceptionDWConv2d, band_kernel_size=11, branch_ratio=0.25),
             norm_layer=nn.BatchNorm2d
         )
+
+        # self.skip_fusion = MLFC(16, 32, 128, 160, lenn=1)
+        self.skip_fusion = MLFC(*[80, 128, 160, 160], lenn=1)
+
+        self.skip_t3_proj = nn.Conv2d(160, 128, 1)
+        self.skip_t2_proj = nn.Conv2d(128, 32, 1)
+        self.skip_t1_proj = nn.Conv2d(80, 16, 1)
+
 
         self.ebn1 = nn.BatchNorm2d(16)
         self.ebn2 = nn.BatchNorm2d(32)
@@ -285,14 +292,9 @@ class UNext(nn.Module):
                                               embed_dim=embed_dims[2])
 
 
-        self.skip_t3_proj = nn.Conv2d(160, 128, kernel_size=1)
-        self.skip_t2_proj = nn.Conv2d(128, 32, kernel_size=1)
-        self.skip_t1_proj = nn.Conv2d(80, 16, kernel_size=1)
-
-        self.sse1 = SpatialSELayer(16)   # after t1_proj
-        self.sse2 = SpatialSELayer(32)   # after t2_proj
-        self.sse3 = SpatialSELayer(128)  # after t3_proj
-        self.sse4 = SpatialSELayer(160)  # before patch_embed4 (t4 is not projected)
+        # self.skip_t3_proj = nn.Conv2d(160, 128, kernel_size=1)
+        # self.skip_t2_proj = nn.Conv2d(128, 32, kernel_size=1)
+        # self.skip_t1_proj = nn.Conv2d(80, 16, kernel_size=1)
 
         self.decoder1 = nn.Conv2d(256, 160, 3, stride=1,padding=1)  
         self.decoder2 =   nn.Conv2d(160, 128, 3, stride=1, padding=1)  
@@ -330,15 +332,12 @@ class UNext(nn.Module):
         ### Stage 1
         out = self.stage1(out)    # [B, 80, 32, 32]
         t1 = out
-        # t1 = self.se_t1(t1)         # Squeeze and Excitation for t1
         ### Stage 2
         out = self.stage2(out)    # [B, 128, 16, 16]
         t2 = out
-        # t2 = self.se_t2(t2)         # Squeeze and Excitation for t2
         ### Stage 3
         out = self.stage3(out)    # [B, 160, 8, 8]
         t3 = out
-        # t3 = self.se_t3(t3)         # Squeeze and Excitation for t3
 
         ### Tokenized MLP Stage
         ### Stage 4
@@ -349,7 +348,12 @@ class UNext(nn.Module):
         out = self.norm3(out)
         out = out.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
         t4 = out
-        t4 = self.sse4(t4)         # Squeeze and Excitation for t4
+
+        t1, t2, t3, t4 = self.skip_fusion(t1, t2, t3, t4)       # MLFC FUSION   
+        t3 = self.skip_t3_proj(t3)  # 160 → 128 for decoder2
+        t2 = self.skip_t2_proj(t2)  # 128 → 32  for decoder3
+        t1 = self.skip_t1_proj(t1)  # 80 → 16   for decoder4
+
         ### Bottleneck
 
         out ,H,W= self.patch_embed4(out)
@@ -380,8 +384,6 @@ class UNext(nn.Module):
            t3 = F.interpolate(t3, size=out.shape[2:], mode='bilinear', align_corners=True)
 
         
-        t3 = self.skip_t3_proj(t3)
-        t3 = self.sse3(t3)        # Squeeze and Excitation for t3
         out = torch.add(out,t3)
         _,_,H,W = out.shape
         out = out.flatten(2).transpose(1,2)
@@ -396,15 +398,11 @@ class UNext(nn.Module):
         if t2.shape[2:] != out.shape[2:]:
            t2 = F.interpolate(t2, size=out.shape[2:], mode='bilinear', align_corners=True)
 
-        t2 = self.skip_t2_proj(t2)
-        t2 = self.sse2(t2)        # Squeeze and Excitation for t2
         out = torch.add(out,t2)
         out = F.relu(F.interpolate(self.dbn4(self.decoder4(out)),scale_factor=(2,2),mode ='bilinear'))
         if t1.shape[2:] != out.shape[2:]:
           t1 = F.interpolate(t1, size=out.shape[2:], mode='bilinear', align_corners=True)
 
-        t1 = self.skip_t1_proj(t1)
-        t1 = self.sse1(t1)      # Squeeze and Excitation for t1
         out = torch.add(out,t1)
         out = F.relu(F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear'))
 
