@@ -16,8 +16,8 @@ __all__ = ['UNext']
 from inceptionnext import MetaNeXtStage, InceptionDWConv2d
 from functools import partial  # already imported
 # from squeeze_and_excitation import ChannelSELayer
-from squeeze_and_excitation import SpatialSELayer
-
+# from squeeze_and_excitation import SpatialSELayer
+from squeeze_and_excitation import ChannelSpatialSELayer
 
 import timm
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
@@ -218,7 +218,7 @@ class UNext(nn.Module):
                  depths=[1, 1, 1], sr_ratios=[8, 4, 2, 1], **kwargs):
         super().__init__()
         
-        print("UNext InceptionNext Spatial SE Initiated")
+        print("UNext InceptionNext Spatial-Channel SE Initiated")
         # self.encoder1 = nn.Conv2d(3, 16, 3, stride=1, padding=1)  
         # self.encoder2 = nn.Conv2d(16, 32, 3, stride=1, padding=1)  
         # self.encoder3 = nn.Conv2d(32, 128, 3, stride=1, padding=1)
@@ -290,10 +290,15 @@ class UNext(nn.Module):
         self.skip_t2_proj = nn.Conv2d(128, 32, kernel_size=1)
         self.skip_t1_proj = nn.Conv2d(80, 16, kernel_size=1)
 
-        self.sse1 = SpatialSELayer(16)   # after t1_proj
-        self.sse2 = SpatialSELayer(32)   # after t2_proj
-        self.sse3 = SpatialSELayer(128)  # after t3_proj
-        self.sse4 = SpatialSELayer(160)  # before patch_embed4 (t4 is not projected)
+        # self.sse1 = SpatialSELayer(16)   # after t1_proj
+        # self.sse2 = SpatialSELayer(32)   # after t2_proj
+        # self.sse3 = SpatialSELayer(128)  # after t3_proj
+        # self.sse4 = SpatialSELayer(160)  # before patch_embed4 (t4 is not projected)
+
+        self.sse1 = ChannelSpatialSELayer(16)   # after t1_proj
+        self.sse2 = ChannelSpatialSELayer(32)   # after t2_proj
+        self.sse3 = ChannelSpatialSELayer(128)  # after t3_proj
+        self.sse4 = ChannelSpatialSELayer(160)  # before patch_embed4 (t4 is not projected)
 
         self.decoder1 = nn.Conv2d(256, 160, 3, stride=1,padding=1)  
         self.decoder2 =   nn.Conv2d(160, 128, 3, stride=1, padding=1)  
