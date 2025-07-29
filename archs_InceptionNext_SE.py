@@ -15,7 +15,8 @@ __all__ = ['UNext']
 
 from inceptionnext import MetaNeXtStage, InceptionDWConv2d
 from functools import partial  # already imported
-from squeeze_and_excitation import ChannelSELayer
+# from squeeze_and_excitation import ChannelSELayer
+from squeeze_and_excitation import SpatialSELayer
 
 import timm
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
@@ -288,10 +289,10 @@ class UNext(nn.Module):
         self.skip_t2_proj = nn.Conv2d(128, 32, kernel_size=1)
         self.skip_t1_proj = nn.Conv2d(80, 16, kernel_size=1)
 
-        self.se_t1 = ChannelSELayer(80)
-        self.se_t2 = ChannelSELayer(128)
-        self.se_t3 = ChannelSELayer(160)
-        self.se_t4 = ChannelSELayer(embed_dims[1])  # t4 after MLP block
+        self.sse1 = SpatialSELayer(16)   # After t1_proj
+        self.sse2 = SpatialSELayer(32)   # After t2_proj
+        self.sse3 = SpatialSELayer(128)  # After t3_proj
+
 
         self.decoder1 = nn.Conv2d(256, 160, 3, stride=1,padding=1)  
         self.decoder2 =   nn.Conv2d(160, 128, 3, stride=1, padding=1)  
@@ -380,6 +381,7 @@ class UNext(nn.Module):
 
         
         t3 = self.skip_t3_proj(t3)
+        t3 = self.sse3(t3)        # Squeeze and Excitation for t3
         out = torch.add(out,t3)
         _,_,H,W = out.shape
         out = out.flatten(2).transpose(1,2)
@@ -395,12 +397,14 @@ class UNext(nn.Module):
            t2 = F.interpolate(t2, size=out.shape[2:], mode='bilinear', align_corners=True)
 
         t2 = self.skip_t2_proj(t2)
+        t2 = self.sse2(t2)        # Squeeze and Excitation for t2
         out = torch.add(out,t2)
         out = F.relu(F.interpolate(self.dbn4(self.decoder4(out)),scale_factor=(2,2),mode ='bilinear'))
         if t1.shape[2:] != out.shape[2:]:
           t1 = F.interpolate(t1, size=out.shape[2:], mode='bilinear', align_corners=True)
 
         t1 = self.skip_t1_proj(t1)
+        t1 = self.sse1(t1)      # Squeeze and Excitation for t1
         out = torch.add(out,t1)
         out = F.relu(F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear'))
 
