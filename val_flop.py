@@ -24,7 +24,8 @@ import time
 # import archs_wavelet
 # import archs_DCA_wavelet
 # import archs_InceptionNext_atto
-import archs_InceptionNext_SE
+# import archs_InceptionNext_SE
+import archs_InceptionNext_MLFC
 # import archs_topformer  
 # import archs_topformer_refine  
 # import archs_topformer_global
@@ -107,7 +108,9 @@ def main():
 
     # model = archs_InceptionNext_atto.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
-    model = archs_InceptionNext_SE.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+    # model = archs_InceptionNext_SE.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
+
+    model = archs_InceptionNext_MLFC.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
     # model = archs_MLFC.__dict__[config['arch']](config['num_classes'], config['input_channels'], config['deep_supervision']).cuda()
 
