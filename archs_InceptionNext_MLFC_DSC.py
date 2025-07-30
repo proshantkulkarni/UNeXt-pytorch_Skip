@@ -331,8 +331,8 @@ class UNext(nn.Module):
         self.dbn3 = nn.BatchNorm2d(32)
         self.dbn4 = nn.BatchNorm2d(16)
         
-        # self.final = nn.Conv2d(16, num_classes, kernel_size=1)
-        self.final = depthwise_separable_conv(16, 1, num_classes)       # DSC Layers
+        self.final = nn.Conv2d(16, num_classes, kernel_size=1)
+        # self.final = depthwise_separable_conv(16, 1, num_classes)       # DSC Layers
 
 
         self.soft = nn.Softmax(dim =1)
