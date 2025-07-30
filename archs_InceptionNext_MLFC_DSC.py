@@ -313,14 +313,14 @@ class UNext(nn.Module):
         # self.skip_t2_proj = nn.Conv2d(128, 32, kernel_size=1)
         # self.skip_t1_proj = nn.Conv2d(80, 16, kernel_size=1)
 
-        # self.decoder1 = nn.Conv2d(256, 160, 3, stride=1,padding=1)  
-        # self.decoder2 =   nn.Conv2d(160, 128, 3, stride=1, padding=1)  
+        self.decoder1 = nn.Conv2d(256, 160, 3, stride=1,padding=1)  
+        self.decoder2 =   nn.Conv2d(160, 128, 3, stride=1, padding=1)  
         # self.decoder3 =   nn.Conv2d(128, 32, 3, stride=1, padding=1) 
         # self.decoder4 =   nn.Conv2d(32, 16, 3, stride=1, padding=1)
         # self.decoder5 =   nn.Conv2d(16, 16, 3, stride=1, padding=1)
 
-        self.decoder1 = depthwise_separable_conv(256, 1, 160)           # DSC Layers
-        self.decoder2 = depthwise_separable_conv(160, 1, 128)           # DSC Layers
+        # self.decoder1 = depthwise_separable_conv(256, 1, 160)           # DSC Layers
+        # self.decoder2 = depthwise_separable_conv(160, 1, 128)           # DSC Layers
         self.decoder3 = depthwise_separable_conv(128, 1, 32)            # DSC Layers
         self.decoder4 = depthwise_separable_conv(32, 1, 16)             # DSC Layers
         self.decoder5 = depthwise_separable_conv(16, 1, 16)             # DSC Layers

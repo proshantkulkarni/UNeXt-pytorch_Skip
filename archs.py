@@ -238,6 +238,8 @@ class UNext(nn.Module):
             dim=embed_dims[2], num_heads=num_heads[0], mlp_ratio=1, qkv_bias=qkv_bias, qk_scale=qk_scale,
             drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[1], norm_layer=norm_layer,
             sr_ratio=sr_ratios[0])])
+        
+        
 
         self.dblock1 = nn.ModuleList([shiftedBlock(
             dim=embed_dims[1], num_heads=num_heads[0], mlp_ratio=1, qkv_bias=qkv_bias, qk_scale=qk_scale,
@@ -339,10 +341,14 @@ class UNext(nn.Module):
         if t2.shape[2:] != out.shape[2:]:
            t2 = F.interpolate(t2, size=out.shape[2:], mode='bilinear', align_corners=True)
         out = torch.add(out,t2)
+
+
         out = F.relu(F.interpolate(self.dbn4(self.decoder4(out)),scale_factor=(2,2),mode ='bilinear'))
         if t1.shape[2:] != out.shape[2:]:
           t1 = F.interpolate(t1, size=out.shape[2:], mode='bilinear', align_corners=True)
         out = torch.add(out,t1)
+
+
         out = F.relu(F.interpolate(self.decoder5(out),scale_factor=(2,2),mode ='bilinear'))
 
         return self.final(out)
