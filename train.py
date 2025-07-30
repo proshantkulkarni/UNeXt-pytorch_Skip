@@ -44,8 +44,11 @@ from utils import AverageMeter, str2bool
 # import archs_InceptionNext_SE_chan
 # ARCH_NAMES = archs_InceptionNext_SE_chan.__all__
 
-import archs_InceptionNext_SE_spat_chan
-ARCH_NAMES = archs_InceptionNext_SE_spat_chan.__all__
+# import archs_InceptionNext_SE_spat_chan
+# ARCH_NAMES = archs_InceptionNext_SE_spat_chan.__all__
+
+import archs_InceptionNext_MLFC_DSC
+ARCH_NAMES = archs_InceptionNext_MLFC_DSC.__all__
 
 # import archs_InceptionNext_SE
 # ARCH_NAMES = archs_InceptionNext_SE.__all__
@@ -398,7 +401,13 @@ def main():
     #     config['deep_supervision']
     # ).to(device)
 
-    model = archs_InceptionNext_SE_spat_chan.__dict__[config['arch']](
+    # model = archs_InceptionNext_SE_spat_chan.__dict__[config['arch']](
+    #     config['num_classes'],
+    #     config['input_channels'],
+    #     config['deep_supervision']
+    # ).to(device)
+
+    model = archs_InceptionNext_MLFC_DSC.__dict__[config['arch']](
         config['num_classes'],
         config['input_channels'],
         config['deep_supervision']
