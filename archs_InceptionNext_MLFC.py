@@ -420,7 +420,7 @@ if __name__ == '__main__':
     model.eval()
 
     # Dummy input: B x C x H x W
-    dummy_input = torch.randn(1, 3, 256, 256)
+    dummy_input = torch.randn(1, 3, 224, 224)
 
     # Forward pass
     with torch.no_grad():
